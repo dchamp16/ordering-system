@@ -1,13 +1,13 @@
-import type {NextPage} from 'next';
-import Link from 'next/link';
+import React from 'react';
+import {NextPage} from 'next';
 
 const Home: NextPage = () => {
+
+
     return (
         <div>
-            <nav>
-                <Link href="/order">Order Page</Link>
-                <Link href="/add-item">Add Item</Link>
-            </nav>
+            <h1>Home Page</h1>
+            <p>Welcome to the homepage!</p>
         </div>
     );
 };
