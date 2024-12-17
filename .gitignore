@@ -50,3 +50,4 @@ pnpm-lock.yaml   # Include if using pnpm
 # Optional: Sensitive information (if you accidentally committed it)
 # config.json # Example
 # secrets.txt # Example
+/my-next-app/.next
