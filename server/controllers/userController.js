@@ -2,9 +2,10 @@ const User = require("../models/userModel");
 const bcrypt = require("bcryptjs");
 
 exports.addUser = async (req, res) => {
-  const { username, password } = req.body;
+  const { username, password, role } = req.body;
+  console.log("Creating user with role:", role); // Debugging
   try {
-    const user = new User({ username, password });
+    const user = new User({ username, password, role });
     await user.save();
     res.status(201).json({ message: "User added successfully", user });
   } catch (err) {

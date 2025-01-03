@@ -1,8 +1,20 @@
 const verifyAdmin = (req, res, next) => {
-  console.log("Session user:", req.session?.user);
-  if (req.session?.user?.role === "admin") {
+  if (
+    req.session?.user?.role === "admin" ||
+    req.session?.user?.role === "superadmin"
+  ) {
     return next();
   }
   return res.status(403).json({ error: "Access denied" });
 };
-module.exports = { verifyAdmin };
+
+const verifySuperAdmin = (req, res, next) => {
+  if (req.session?.user?.role === "superadmin") {
+    return next();
+  }
+  return res
+    .status(403)
+    .json({ error: "Access denied for non-superadmin users" });
+};
+
+module.exports = { verifyAdmin, verifySuperAdmin };
