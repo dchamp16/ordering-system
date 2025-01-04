@@ -1,12 +1,20 @@
 const User = require("../models/userModel");
 const bcrypt = require("bcryptjs");
+const AuditLog = require("../models/auditLogModel");
 
 exports.addUser = async (req, res) => {
-  const { username, password, role } = req.body;
-  console.log("Creating user with role:", role); // Debugging
   try {
+    const { username, password, role } = req.body;
     const user = new User({ username, password, role });
     await user.save();
+
+    // Log the action
+    await AuditLog.create({
+      action: "User Added",
+      performedBy: req.session?.user?.username || "Unknown",
+      details: { username, role },
+    });
+
     res.status(201).json({ message: "User added successfully", user });
   } catch (err) {
     res.status(400).json({ error: "Failed to add user" });
@@ -23,12 +31,18 @@ exports.getUsers = async (req, res) => {
 };
 
 exports.deleteUser = async (req, res) => {
-  const { id } = req.params;
   try {
+    const { id } = req.params;
     const user = await User.findByIdAndDelete(id);
-    if (!user) {
-      return res.status(404).json({ error: "User not found" });
-    }
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    // Log the action
+    await AuditLog.create({
+      action: "User Deleted",
+      performedBy: req.session?.user?.username || "Unknown",
+      details: { userId: id, username: user.username },
+    });
+
     res.json({ message: "User deleted successfully" });
   } catch (err) {
     res.status(500).json({ error: "Failed to delete user" });

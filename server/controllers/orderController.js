@@ -1,4 +1,5 @@
 const Order = require("../models/orderModel");
+const AuditLog = require("../models/auditLogModel");
 
 const getAllOrders = async (req, res) => {
   try {
@@ -23,6 +24,15 @@ const createOrder = async (req, res) => {
   try {
     const order = new Order(req.body);
     await order.save();
+
+    await AuditLog.create({
+      action: "Order Created",
+      performedBy: req.session?.user?.username || "Unknown",
+      details: {
+        orderId: order._id,
+        empId: order.empId,
+      },
+    });
     res.status(201).json(order);
   } catch (err) {
     res.status(400).json({ error: "Failed to create order" });
@@ -47,12 +57,26 @@ const updateOrder = async (req, res) => {
 const deleteOrder = async (req, res) => {
   try {
     const { id } = req.params;
-    const deleteOrder = await Order.findByIdAndDelete(id);
-    if (!deleteOrder) {
+    console.log("Order ID to delete:", id); // Debugging
+
+    const deletedOrder = await Order.findByIdAndDelete(id);
+    if (!deletedOrder) {
+      console.log("Order not found in database."); // Debugging
       return res.status(404).json({ error: "Order not found" });
     }
-    return res.json(deleteOrder);
+
+    console.log("Order deleted:", deletedOrder); // Debugging
+
+    // Log the action
+    await AuditLog.create({
+      action: "Order Deleted",
+      performedBy: req.session?.user?.username || "Unknown",
+      details: { orderId: id },
+    });
+
+    res.json({ message: "Order deleted successfully" });
   } catch (err) {
+    console.error("Error deleting order:", err); // Debugging
     res.status(400).json({ error: "Failed to delete order" });
   }
 };
