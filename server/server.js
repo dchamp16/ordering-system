@@ -39,6 +39,7 @@ app.use("/api/admin", require("./routes/adminRoutes"));
 app.use("/api/auth", require("./routes/authRoutes"));
 app.use("/api/users", require("./routes/userRoutes"));
 app.use("/api/audit-logs", require("./routes/auditLogRoutes"));
+app.use("/api/hardware", require("./routes/hardwareRoutes"));
 
 // Database Connection and Server Start
 connectDB(MONGO_URI).then(() => {
