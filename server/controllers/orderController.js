@@ -1,5 +1,6 @@
 const Order = require("../models/orderModel");
 const AuditLog = require("../models/auditLogModel");
+const Hardware = require("../models/hardwareModel");
 
 const getAllOrders = async (req, res) => {
   try {
