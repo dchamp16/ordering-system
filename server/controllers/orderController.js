@@ -1,6 +1,8 @@
+const mongoose = require("mongoose");
 const Order = require("../models/orderModel");
 const AuditLog = require("../models/auditLogModel");
 const Hardware = require("../models/hardwareModel");
+const Structure = require("../models/structureModel");
 
 const getAllOrders = async (req, res) => {
     try {
@@ -27,7 +29,7 @@ const createOrder = async (req, res) => {
             empId,
             empName,
             structurePO,
-            structurename,
+            structureName,
             orders
         } = req.body;
 
@@ -52,9 +54,40 @@ const createOrder = async (req, res) => {
                 return res.status(400).json({error: `Insufficient stock for hardware ${hardwareOldNumber}`});
             }
 
-            // Deduct stock and save
+            // Deduct stock from hardware
             hardware.quantity -= quantity;
             await hardware.save();
+
+            // Find or create the structure
+            let structure = await Structure.findOne({structurePO});
+            if (!structure) {
+                structure = new Structure({
+                    structurePO,
+                    structureName,
+                    hardwareAllocation: [], // Initialize as an empty array
+                });
+            }
+
+            // Ensure `hardwareAllocation` is an array
+            structure.hardwareAllocation = structure.hardwareAllocation || [];
+
+            // Find or add the hardware allocation
+            let allocationIndex = structure.hardwareAllocation.findIndex(
+                (item) => item.hardwareOldNumber === hardwareOldNumber
+            );
+
+            if (allocationIndex === -1) {
+                // If hardware is not found in the allocation, add it
+                structure.hardwareAllocation.push({
+                    hardwareOldNumber,
+                    quantity
+                });
+            } else {
+                // Update the quantity for the existing allocation
+                structure.hardwareAllocation[allocationIndex].quantity += quantity;
+            }
+
+            await structure.save();
 
             processedOrders.push({
                 hardwareOldNumber,
@@ -71,7 +104,7 @@ const createOrder = async (req, res) => {
                     orderedQuantity: quantity,
                     remainingStock: hardware.quantity,
                     structurePO,
-                    structurename,
+                    structureName,
                 },
             });
         }
@@ -80,8 +113,8 @@ const createOrder = async (req, res) => {
         const newOrder = new Order({
             empId,
             empName,
-            structurePO, // Save structurePO
-            structurename,
+            structurePO,
+            structureName,
             orders: processedOrders,
         });
 
@@ -89,17 +122,16 @@ const createOrder = async (req, res) => {
 
         res.status(201).json({
             message: "Orders created successfully",
-            newOrder
+            newOrder,
         });
     } catch (err) {
         console.error("Error creating order:", err);
         res.status(500).json({
             error: "Failed to create order",
-            details: err.message
+            details: err.message,
         });
     }
 };
-
 
 const updateOrder = async (req, res) => {
     try {
@@ -143,13 +175,23 @@ const deleteOrder = async (req, res) => {
     }
 };
 
-const returnOrder = async (req, res) => {
+const returnHardware = async (req, res) => {
     try {
         const {
             returnerEmpId,
             returnerName,
+            structurePO,
+            structureName,
             returning
         } = req.body;
+
+        if (!structurePO || !structureName) {
+            return res.status(400).json({error: "StructurePO and structureName are required"});
+        }
+
+        if (!Array.isArray(returning) || returning.length === 0) {
+            return res.status(400).json({error: "Returning array must not be empty"});
+        }
 
         const results = {
             success: [],
@@ -157,9 +199,16 @@ const returnOrder = async (req, res) => {
             errors: [],
         };
 
+        // Find the structure
+        let structure = await Structure.findOne({structurePO});
+        if (!structure) {
+            return res.status(404).json({error: `Structure not found: ${structurePO}`});
+        }
+
         for (const item of returning) {
-            const {
+            let {
                 orderId,
+                hardwareOldNumber,
                 returnedQuantity
             } = item;
 
@@ -167,102 +216,187 @@ const returnOrder = async (req, res) => {
                 if (returnedQuantity <= 0) {
                     results.errors.push({
                         orderId,
+                        hardwareOldNumber,
                         error: "Returned quantity must be greater than zero",
                     });
                     continue;
                 }
 
-                // Find the parent order document containing the subdocument
-                const parentOrder = await Order.findOne({"orders._id": orderId});
-                if (!parentOrder) {
+                let orderItem = null;
+                let parentOrder = null;
+
+                if (orderId) {
+                    // Handle return by orderId
+                    parentOrder = await Order.findOne({"orders._id": new mongoose.Types.ObjectId(orderId)});
+                    if (!parentOrder) {
+                        results.errors.push({
+                            orderId,
+                            error: "Order not found"
+                        });
+                        continue;
+                    }
+
+                    orderItem = parentOrder.orders.id(orderId);
+                    if (!orderItem) {
+                        results.errors.push({
+                            orderId,
+                            error: "Order item not found in the order"
+                        });
+                        continue;
+                    }
+
+                    // Ensure the hardwareOldNumber matches the order item
+                    if (orderItem.hardwareOldNumber !== hardwareOldNumber) {
+                        results.errors.push({
+                            orderId,
+                            hardwareOldNumber,
+                            error: `HardwareOldNumber mismatch for the provided orderId`,
+                        });
+                        continue;
+                    }
+                }
+
+                if (!hardwareOldNumber) {
                     results.errors.push({
                         orderId,
-                        error: "Order not found",
+                        error: "HardwareOldNumber is required if orderId is NULL"
                     });
                     continue;
                 }
 
-                // Locate the specific subdocument
-                const orderItem = parentOrder.orders.id(orderId);
-                if (!orderItem) {
+                // Normalize hardwareOldNumber
+                hardwareOldNumber = hardwareOldNumber.trim().toLowerCase();
+
+                // Ensure `hardwareAllocation` is an array
+                structure.hardwareAllocation = structure.hardwareAllocation || [];
+
+                // Find the hardware allocation in the structure
+                const allocation = structure.hardwareAllocation.find(
+                    (item) => item.hardwareOldNumber.trim().toLowerCase() === hardwareOldNumber
+                );
+
+                if (!allocation) {
                     results.errors.push({
-                        orderId,
-                        error: "Order item not found in the orders array",
+                        hardwareOldNumber,
+                        error: `Allocation not found for hardware ${hardwareOldNumber} in structure ${structurePO}`,
                     });
                     continue;
                 }
 
-                // Skip if order item quantity is already 0
-                if (orderItem.quantity === 0) {
-                    results.skipped.push({
-                        orderId,
-                        message: "Order item quantity is already 0, cannot process return",
-                    });
-                    continue;
-                }
-
-                // Calculate the actual quantity to return
-                const actualReturnedQuantity = Math.min(returnedQuantity, orderItem.quantity);
-
-                // Update the order item quantity
-                orderItem.quantity -= actualReturnedQuantity;
-                if (orderItem.quantity === 0) {
-                    orderItem.status = "Returned";
-                }
-
-                // Find the corresponding hardware
-                const hardware = await Hardware.findOne({hardwareOldNumber: orderItem.hardwareOldNumber});
-                if (!hardware) {
+                // Ensure sufficient allocation exists
+                if (allocation.quantity < returnedQuantity) {
                     results.errors.push({
-                        orderId,
-                        error: `Hardware not found: ${orderItem.hardwareOldNumber}`,
+                        hardwareOldNumber,
+                        error: `Insufficient allocation for hardware ${hardwareOldNumber} in structure ${structurePO}`,
                     });
                     continue;
                 }
+
+                // Deduct from structure allocation
+                allocation.quantity -= returnedQuantity;
+                await structure.save();
 
                 // Update the hardware stock
-                hardware.quantity += actualReturnedQuantity;
+                const hardware = await Hardware.findOne({hardwareOldNumber});
+                if (!hardware) {
+                    results.errors.push({
+                        hardwareOldNumber,
+                        error: `Hardware not found: ${hardwareOldNumber}`
+                    });
+                    continue;
+                }
+
+                hardware.quantity += returnedQuantity;
                 await hardware.save();
 
-                // Save the updated parent order document
-                await parentOrder.save();
+                if (orderId) {
+                    // Deduct from the specific order
+                    orderItem.quantity -= returnedQuantity;
 
-                // Create an audit log
+                    // Mark item as returned if quantity is zero or less
+                    if (orderItem.quantity <= 0) {
+                        orderItem.quantity = 0;
+                        orderItem.status = "Returned";
+                    }
+
+                    parentOrder.markModified("orders");
+                    await parentOrder.save();
+                } else {
+                    // Handle deduction from multiple orders
+                    const orders = await Order.find({
+                        structurePO,
+                        "orders.hardwareOldNumber": hardwareOldNumber,
+                    }).sort({date: 1}); // Oldest orders first
+
+                    let remainingToDeduct = returnedQuantity;
+
+                    for (const order of orders) {
+                        for (const subOrder of order.orders) {
+                            if (subOrder.hardwareOldNumber === hardwareOldNumber && remainingToDeduct > 0) {
+                                const deductAmount = Math.min(subOrder.quantity, remainingToDeduct);
+                                subOrder.quantity -= deductAmount;
+                                remainingToDeduct -= deductAmount;
+
+                                if (subOrder.quantity <= 0) {
+                                    subOrder.quantity = 0;
+                                    subOrder.status = "Returned";
+                                }
+
+                                order.markModified("orders");
+                                await order.save();
+                            }
+
+                            if (remainingToDeduct <= 0) break;
+                        }
+
+                        if (remainingToDeduct <= 0) break;
+                    }
+
+                    if (remainingToDeduct > 0) {
+                        results.errors.push({
+                            hardwareOldNumber,
+                            error: `Could not deduct entire returnedQuantity from orders for hardware ${hardwareOldNumber}`,
+                        });
+                        continue;
+                    }
+                }
+
+                // Log the return action
                 await AuditLog.create({
-                    action: "Order Returned",
+                    action: "Hardware Returned",
                     performedBy: `${returnerName} (EmpID: ${returnerEmpId})`,
                     details: {
-                        orderId: parentOrder._id,
-                        hardwareOldNumber: orderItem.hardwareOldNumber,
-                        returnedQuantity: actualReturnedQuantity,
-                        newOrderQuantity: orderItem.quantity,
+                        structurePO,
+                        structureName,
+                        hardwareOldNumber,
+                        returnedQuantity,
                         newStock: hardware.quantity,
-                        structurePO: parentOrder.structurePO, // Include structurePO
-                        structurename: parentOrder.structurename,
+                        newStructureAllocation: allocation.quantity,
                     },
                 });
 
-                // Add to success results
                 results.success.push({
-                    orderId,
-                    hardwareOldNumber: orderItem.hardwareOldNumber,
-                    returnedQuantity: actualReturnedQuantity,
-                    newOrderQuantity: orderItem.quantity,
+                    orderId: orderItem ? orderItem._id : null,
+                    hardwareOldNumber,
+                    returnedQuantity,
                     newStock: hardware.quantity,
+                    structureAllocation: allocation.quantity,
                 });
             } catch (err) {
                 results.errors.push({
                     orderId,
+                    hardwareOldNumber,
                     error: err.message,
                 });
             }
         }
 
         res.json({
-            message: "Order return processing completed",
+            message: "Return processing completed",
             results,
         });
     } catch (err) {
+        console.error("Error processing returns:", err);
         res.status(500).json({
             error: "Failed to process returns",
             details: err.message,
@@ -277,5 +411,5 @@ module.exports = {
     createOrder,
     updateOrder,
     deleteOrder,
-    returnOrder
+    returnHardware
 };

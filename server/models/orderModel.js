@@ -5,7 +5,7 @@ const orderSchema = new mongoose.Schema({
     empId: {type: String, required: true},
     empName: {type: String, required: true},
     structurePO: {type: String, required: true},
-    structurename: {type: String, required: true},
+    structureName: {type: String, required: true}, // Correct field name
     orders: [
         {
             hardwareOldNumber: {
@@ -23,9 +23,9 @@ const orderSchema = new mongoose.Schema({
         },
     ],
     date: {
-        type: String, // Store as a formatted string for readability
+        type: String,
         default: () =>
-            moment().tz("America/Denver").format("MMMM D YYYY, HH:mm:ss"), // e.g., January 1 2024, 13:45:00
+            moment().tz("America/Denver").format("MMMM D YYYY, HH:mm:ss"),
     },
 });
 
