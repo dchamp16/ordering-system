@@ -1,8 +1,36 @@
 const mongoose = require("mongoose");
+const Joi = require("joi");
+
 const Order = require("../models/orderModel");
 const AuditLog = require("../models/auditLogModel");
 const Hardware = require("../models/hardwareModel");
 const Structure = require("../models/structureModel");
+
+const orderSchema = Joi.object({
+    empId: Joi.string().required().messages({
+        "string.empty": "Employee ID is required",
+    }),
+    empName: Joi.string().required().messages({
+        "string.empty": "Employee name is required",
+    }),
+    structurePO: Joi.string().required().messages({
+        "string.empty": "Structure PO is required",
+    }),
+    structureName: Joi.string().required().messages({
+        "string.empty": "Structure name is required",
+    }),
+    orders: Joi.array().items(
+        Joi.object({
+            hardwareOldNumber: Joi.string().required().messages({
+                "string.empty": "Hardware Old Number is required",
+            }),
+            quantity: Joi.number().min(1).required().messages({
+                "number.min": "Quantity must be greater than zero",
+                "number.empty": "Quantity is required",
+            }),
+        })
+    ).required()
+})
 
 const getAllOrders = async (req, res) => {
     try {
@@ -25,6 +53,14 @@ const getEmpOrders = async (req, res) => {
 
 const createOrder = async (req, res) => {
     try {
+        const {error} = orderSchema.validate(req.body, {abortEarly: false});
+        if (error) {
+            return res.status(400).json({
+                error: "Validation failed",
+                details: error.details.map((err) => err.message),
+            });
+        }
+
         const {
             empId,
             empName,
@@ -41,49 +77,41 @@ const createOrder = async (req, res) => {
                 quantity
             } = order;
 
-            if (quantity <= 0) {
-                return res.status(400).json({error: "Order quantity must be greater than zero"});
-            }
-
             const hardware = await Hardware.findOne({hardwareOldNumber});
             if (!hardware) {
                 return res.status(404).json({error: `Hardware not found: ${hardwareOldNumber}`});
             }
 
             if (hardware.quantity < quantity) {
-                return res.status(400).json({error: `Insufficient stock for hardware ${hardwareOldNumber}`});
+                return res.status(400).json({
+                    error: `Insufficient stock for hardware ${hardwareOldNumber}`,
+                });
             }
 
-            // Deduct stock from hardware
             hardware.quantity -= quantity;
             await hardware.save();
 
-            // Find or create the structure
             let structure = await Structure.findOne({structurePO});
             if (!structure) {
                 structure = new Structure({
                     structurePO,
                     structureName,
-                    hardwareAllocation: [], // Initialize as an empty array
+                    hardwareAllocation: [],
                 });
             }
 
-            // Ensure `hardwareAllocation` is an array
             structure.hardwareAllocation = structure.hardwareAllocation || [];
 
-            // Find or add the hardware allocation
-            let allocationIndex = structure.hardwareAllocation.findIndex(
+            const allocationIndex = structure.hardwareAllocation.findIndex(
                 (item) => item.hardwareOldNumber === hardwareOldNumber
             );
 
             if (allocationIndex === -1) {
-                // If hardware is not found in the allocation, add it
                 structure.hardwareAllocation.push({
                     hardwareOldNumber,
                     quantity
                 });
             } else {
-                // Update the quantity for the existing allocation
                 structure.hardwareAllocation[allocationIndex].quantity += quantity;
             }
 
@@ -92,10 +120,9 @@ const createOrder = async (req, res) => {
             processedOrders.push({
                 hardwareOldNumber,
                 quantity,
-                status: "Pending",
+                status: "Pending"
             });
 
-            // Log the action for each order
             await AuditLog.create({
                 action: "Order Created",
                 performedBy: empName,
@@ -109,7 +136,6 @@ const createOrder = async (req, res) => {
             });
         }
 
-        // Create the order document
         const newOrder = new Order({
             empId,
             empName,
