@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Loader, ArrowUpDown } from 'lucide-react';
+import { Loader, ChevronUp, ChevronDown } from 'lucide-react';
 import axiosInstance from '../utils/axiosInstance';
 
 const OrderForm = () => {
@@ -13,7 +13,7 @@ const OrderForm = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [sortBy, setSortBy] = useState('name');
+  const [sortConfig, setSortConfig] = useState({ key: 'hardwareOldNumber', direction: 'asc' });
   const [selectedItems, setSelectedItems] = useState(new Set());
   const [quantities, setQuantities] = useState({});
   const [hardwareItems, setHardwareItems] = useState([]);
@@ -22,12 +22,8 @@ const OrderForm = () => {
   useEffect(() => {
     const initializeSession = async () => {
       try {
-        // First set admin session
         await axiosInstance.get('/auth/set-admin-session');
-        
-        // Then fetch hardware
         const response = await axiosInstance.get('/hardware');
-        console.log("Peter");
         setHardwareItems(response.data);
       } catch (err) {
         setError('Failed to load hardware items');
@@ -76,15 +72,29 @@ const OrderForm = () => {
     setSelectedItems(newSelected);
   };
 
-  const toggleSort = () => {
-    setSortBy(prev => prev === 'name' ? 'oldNumber' : 'name');
+  const handleSort = (key) => {
+    setSortConfig(prevConfig => ({
+      key,
+      direction: prevConfig.key === key && prevConfig.direction === 'asc' ? 'desc' : 'asc'
+    }));
   };
 
-  const sortedHardwareItems = [...hardwareItems].sort((a, b) => 
-    sortBy === 'name' 
-      ? (a.hardwareName || '').localeCompare(b.hardwareName || '')
-      : a.hardwareOldNumber.localeCompare(b.hardwareOldNumber)
-  );
+  const sortedHardwareItems = [...hardwareItems].sort((a, b) => {
+    let aValue = a[sortConfig.key];
+    let bValue = b[sortConfig.key];
+
+    // Handle special cases for nested or computed values
+    if (sortConfig.key === 'hardwareName') {
+      aValue = a.hardwareName || a.hardwareDescription || '';
+      bValue = b.hardwareName || b.hardwareDescription || '';
+    }
+
+    if (aValue === null || aValue === undefined) aValue = '';
+    if (bValue === null || bValue === undefined) bValue = '';
+
+    const comparison = aValue.toString().localeCompare(bValue.toString(), undefined, { numeric: true });
+    return sortConfig.direction === 'asc' ? comparison : -comparison;
+  });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -122,6 +132,15 @@ const OrderForm = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const SortIcon = ({ columnKey }) => {
+    if (sortConfig.key !== columnKey) {
+      return <ChevronUp className="h-4 w-4 text-gray-400 opacity-0 group-hover:opacity-100" />;
+    }
+    return sortConfig.direction === 'asc' 
+      ? <ChevronUp className="h-4 w-4" />
+      : <ChevronDown className="h-4 w-4" />;
   };
 
   if (loadingHardware) {
@@ -208,17 +227,7 @@ const OrderForm = () => {
         </div>
 
         <div className="space-y-4">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-medium">Hardware Items</h3>
-            <button
-              type="button"
-              onClick={toggleSort}
-              className="flex items-center text-gray-600 hover:text-gray-800"
-            >
-              <ArrowUpDown className="h-4 w-4 mr-1" />
-              Sort by {sortBy === 'name' ? 'Number' : 'Name'}
-            </button>
-          </div>
+          <h3 className="text-lg font-medium">Hardware Items</h3>
 
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
@@ -227,17 +236,45 @@ const OrderForm = () => {
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Select
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Number
+                  <th 
+                    scope="col" 
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer group"
+                    onClick={() => handleSort('hardwareOldNumber')}
+                  >
+                    <div className="flex items-center">
+                      Number
+                      <SortIcon columnKey="hardwareOldNumber" />
+                    </div>
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Name
+                  <th 
+                    scope="col" 
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer group"
+                    onClick={() => handleSort('hardwareName')}
+                  >
+                    <div className="flex items-center">
+                      Name
+                      <SortIcon columnKey="hardwareName" />
+                    </div>
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Group
+                  <th 
+                    scope="col" 
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer group"
+                    onClick={() => handleSort('hardwareGroupName')}
+                  >
+                    <div className="flex items-center">
+                      Group
+                      <SortIcon columnKey="hardwareGroupName" />
+                    </div>
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Available
+                  <th 
+                    scope="col" 
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer group"
+                    onClick={() => handleSort('quantity')}
+                  >
+                    <div className="flex items-center">
+                      Available
+                      <SortIcon columnKey="quantity" />
+                    </div>
                   </th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Order Qty
@@ -256,7 +293,7 @@ const OrderForm = () => {
                       />
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {item.hardwareOldNumber}
+                      {item.hardwareOldNumber.toUpperCase()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {item.hardwareName || item.hardwareDescription}
