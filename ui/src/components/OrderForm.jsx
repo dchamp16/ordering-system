@@ -2,6 +2,12 @@ import { useState, useEffect } from 'react';
 import { Loader, ChevronUp, ChevronDown } from 'lucide-react';
 import axiosInstance from '../utils/axiosInstance';
 
+/*
+TODO
+1. When submitting the form. "ORDER SUBMITED" should be show in the middle of the screen
+2. When the order is submitted, the table should be reset and show the new values
+*/
+
 const OrderForm = () => {
   const [formData, setFormData] = useState({
     empId: '',

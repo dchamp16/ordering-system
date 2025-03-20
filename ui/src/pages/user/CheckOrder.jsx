@@ -2,6 +2,12 @@ import { useState } from 'react';
 import { Package, Loader, Search, RotateCcw } from 'lucide-react';
 import axiosInstance from '../../utils/axiosInstance';
 
+/*
+TODO
+1. When returning an item, user can return how many items they want.
+2. chat feature to the admin to ask for help.
+*/
+
 const CheckOrder = () => {
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(false);
