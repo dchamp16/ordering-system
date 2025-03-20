@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Package, Loader, Search } from 'lucide-react';
+import { Package, Loader, Search, RotateCcw } from 'lucide-react';
 import axiosInstance from '../../utils/axiosInstance';
 
 const CheckOrder = () => {
@@ -7,6 +7,7 @@ const CheckOrder = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [searchEmpId, setSearchEmpId] = useState('');
+    const [returningOrder, setReturningOrder] = useState(null);
 
     const handleSearch = async (e) => {
         e.preventDefault();
@@ -23,6 +24,33 @@ const CheckOrder = () => {
             setOrders([]);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleReturn = async (order, itemIndex) => {
+        const item = order.orders[itemIndex];
+        setReturningOrder(order._id + '-' + itemIndex);
+        
+        try {
+            await axiosInstance.post('/orders/return', {
+                returnerEmpId: order.empId,
+                returnerName: order.empName,
+                structurePO: order.structurePO,
+                structureName: order.structureName,
+                returning: [{
+                    orderId: item._id,
+                    hardwareOldNumber: item.hardwareOldNumber,
+                    returnedQuantity: item.quantity
+                }]
+            });
+            
+            // Refresh orders after return
+            const response = await axiosInstance.get(`/orders/${searchEmpId}`);
+            setOrders(response.data);
+        } catch (err) {
+            setError('Failed to return item: ' + (err.response?.data?.error || err.message));
+        } finally {
+            setReturningOrder(null);
         }
     };
 
@@ -82,7 +110,7 @@ const CheckOrder = () => {
                                 <div className="grid grid-cols-2 gap-4 mb-4">
                                     <div>
                                         <p className="text-sm text-gray-600">Order Date</p>
-                                        <p className="font-medium">{order.date}</p>
+                                        <p className="font-medium">{new Date(order.date).toLocaleDateString()}</p>
                                     </div>
                                     <div>
                                         <p className="text-sm text-gray-600">Structure</p>
@@ -98,17 +126,35 @@ const CheckOrder = () => {
                                     <h3 className="font-medium mb-2">Order Items</h3>
                                     <div className="space-y-2">
                                         {order.orders.map((item, index) => (
-                                            <div key={index} className="flex justify-between items-center">
-                                                <span>{item.hardwareOldNumber}</span>
+                                            <div key={index} className="flex justify-between items-center py-2">
+                                                <span className="font-medium">{item.hardwareOldNumber}</span>
                                                 <div className="flex items-center space-x-4">
                                                     <span className="text-gray-600">Qty: {item.quantity}</span>
-                                                    <span className={`px-2 py-1 rounded text-sm ${
-                                                        item.status === 'Pending'
-                                                            ? 'bg-yellow-100 text-yellow-800'
-                                                            : 'bg-green-100 text-green-800'
-                                                    }`}>
-                            {item.status}
-                          </span>
+                                                    <div className="flex items-center space-x-2">
+                                                        <span className={`px-2 py-1 rounded text-sm ${
+                                                            item.status === 'Pending'
+                                                                ? 'bg-yellow-100 text-yellow-800'
+                                                                : item.status === 'Returned'
+                                                                ? 'bg-gray-100 text-gray-800'
+                                                                : 'bg-green-100 text-green-800'
+                                                        }`}>
+                                                            {item.status}
+                                                        </span>
+                                                        {item.status === 'Pending' && (
+                                                            <button
+                                                                onClick={() => handleReturn(order, index)}
+                                                                disabled={returningOrder === `${order._id}-${index}`}
+                                                                className="ml-2 p-1 text-blue-600 hover:text-blue-800 focus:outline-none disabled:opacity-50"
+                                                                title="Return Item"
+                                                            >
+                                                                {returningOrder === `${order._id}-${index}` ? (
+                                                                    <Loader className="h-5 w-5 animate-spin" />
+                                                                ) : (
+                                                                    <RotateCcw className="h-5 w-5" />
+                                                                )}
+                                                            </button>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
                                         ))}
