@@ -1,12 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Loader, ChevronUp, ChevronDown } from 'lucide-react';
+import { Toaster, toast } from 'react-hot-toast';
 import axiosInstance from '../utils/axiosInstance';
-
-/*
-TODO
-1. When submitting the form. "ORDER SUBMITED" should be show in the middle of the screen
-2. When the order is submitted, the table should be reset and show the new values
-*/
 
 const OrderForm = () => {
   const [formData, setFormData] = useState({
@@ -25,17 +20,26 @@ const OrderForm = () => {
   const [hardwareItems, setHardwareItems] = useState([]);
   const [loadingHardware, setLoadingHardware] = useState(true);
 
+  const fetchHardwareItems = async () => {
+    try {
+      const response = await axiosInstance.get('/hardware');
+      setHardwareItems(response.data);
+    } catch (err) {
+      setError('Failed to load hardware items');
+      console.error('Error fetching hardware:', err);
+    } finally {
+      setLoadingHardware(false);
+    }
+  };
+
   useEffect(() => {
     const initializeSession = async () => {
       try {
         await axiosInstance.get('/auth/set-admin-session');
-        const response = await axiosInstance.get('/hardware');
-        setHardwareItems(response.data);
+        await fetchHardwareItems();
       } catch (err) {
         setError('Failed to load hardware items');
         console.error('Error fetching hardware:', err);
-      } finally {
-        setLoadingHardware(false);
       }
     };
 
@@ -123,7 +127,20 @@ const OrderForm = () => {
         ...formData,
         orders
       });
-      setSuccess('Order created successfully!');
+      
+      // Show success toast
+      toast.success('Order submitted successfully!', {
+        duration: 3000,
+        position: 'top-center',
+        style: {
+          background: '#10B981',
+          color: '#FFFFFF',
+          padding: '16px',
+          borderRadius: '8px',
+        },
+      });
+
+      // Reset form
       setFormData({
         empId: '',
         empName: '',
@@ -133,8 +150,22 @@ const OrderForm = () => {
       });
       setSelectedItems(new Set());
       setQuantities({});
+
+      // Refresh hardware items
+      await fetchHardwareItems();
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to create order');
+      const errorMessage = err.response?.data?.error || 'Failed to create order';
+      setError(errorMessage);
+      toast.error(errorMessage, {
+        duration: 3000,
+        position: 'top-center',
+        style: {
+          background: '#EF4444',
+          color: '#FFFFFF',
+          padding: '16px',
+          borderRadius: '8px',
+        },
+      });
     } finally {
       setLoading(false);
     }
@@ -159,6 +190,7 @@ const OrderForm = () => {
 
   return (
     <div className="max-w-6xl mx-auto p-6 bg-white rounded-lg shadow-md">
+      <Toaster />
       <h2 className="text-2xl font-bold mb-6">Create New Order</h2>
 
       {error && (
