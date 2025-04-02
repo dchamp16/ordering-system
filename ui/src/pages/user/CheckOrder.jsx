@@ -1,12 +1,7 @@
 import { useState } from 'react';
-import { Package, Loader, Search, RotateCcw } from 'lucide-react';
+import { Package, Loader, Search, RotateCcw, MessageSquare, Send, X } from 'lucide-react';
+import { toast, Toaster } from 'react-hot-toast';
 import axiosInstance from '../../utils/axiosInstance';
-
-/*
-TODO
-1. When returning an item, user can return how many items they want.
-2. chat feature to the admin to ask for help.
-*/
 
 const CheckOrder = () => {
     const [orders, setOrders] = useState([]);
@@ -14,6 +9,10 @@ const CheckOrder = () => {
     const [error, setError] = useState('');
     const [searchEmpId, setSearchEmpId] = useState('');
     const [returningOrder, setReturningOrder] = useState(null);
+    const [returnQuantities, setReturnQuantities] = useState({});
+    const [showChat, setShowChat] = useState(false);
+    const [message, setMessage] = useState('');
+    const [chatMessages, setChatMessages] = useState([]);
 
     const handleSearch = async (e) => {
         e.preventDefault();
@@ -25,6 +24,15 @@ const CheckOrder = () => {
         try {
             const response = await axiosInstance.get(`/orders/${searchEmpId}`);
             setOrders(response.data);
+            
+            // Initialize return quantities
+            const quantities = {};
+            response.data.forEach(order => {
+                order.orders.forEach(item => {
+                    quantities[`${order._id}-${item._id}`] = item.quantity;
+                });
+            });
+            setReturnQuantities(quantities);
         } catch (err) {
             setError('Failed to fetch orders');
             setOrders([]);
@@ -33,9 +41,26 @@ const CheckOrder = () => {
         }
     };
 
+    const handleReturnQuantityChange = (orderId, itemId, quantity, maxQuantity) => {
+        const key = `${orderId}-${itemId}`;
+        const newQuantity = Math.min(Math.max(1, parseInt(quantity) || 0), maxQuantity);
+        setReturnQuantities(prev => ({
+            ...prev,
+            [key]: newQuantity
+        }));
+    };
+
     const handleReturn = async (order, itemIndex) => {
         const item = order.orders[itemIndex];
-        setReturningOrder(order._id + '-' + itemIndex);
+        const returnKey = `${order._id}-${item._id}`;
+        const returnQuantity = returnQuantities[returnKey];
+        
+        if (!returnQuantity || returnQuantity <= 0 || returnQuantity > item.quantity) {
+            toast.error('Invalid return quantity');
+            return;
+        }
+
+        setReturningOrder(returnKey);
         
         try {
             await axiosInstance.post('/orders/return', {
@@ -46,18 +71,46 @@ const CheckOrder = () => {
                 returning: [{
                     orderId: item._id,
                     hardwareOldNumber: item.hardwareOldNumber,
-                    returnedQuantity: item.quantity
+                    returnedQuantity: returnQuantity
                 }]
             });
             
             // Refresh orders after return
             const response = await axiosInstance.get(`/orders/${searchEmpId}`);
             setOrders(response.data);
+            toast.success('Items returned successfully');
         } catch (err) {
-            setError('Failed to return item: ' + (err.response?.data?.error || err.message));
+            const errorMessage = err.response?.data?.error || err.message;
+            setError('Failed to return item: ' + errorMessage);
+            toast.error(errorMessage);
         } finally {
             setReturningOrder(null);
         }
+    };
+
+    const handleSendMessage = () => {
+        if (!message.trim()) return;
+
+        const newMessage = {
+            id: Date.now(),
+            text: message,
+            sender: 'user',
+            timestamp: new Date().toISOString()
+        };
+
+        setChatMessages(prev => [...prev, newMessage]);
+        setMessage('');
+
+        // Simulate admin response
+        setTimeout(() => {
+            const adminResponse = {
+                id: Date.now() + 1,
+                text: "Thank you for your message. An admin will respond shortly.",
+                sender: 'admin',
+                timestamp: new Date().toISOString()
+            };
+            setChatMessages(prev => [...prev, adminResponse]);
+        }, 1000);
     };
 
     if (loading) {
@@ -69,7 +122,8 @@ const CheckOrder = () => {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 py-8">
+        <div className="min-h-screen bg-gray-50 py-8 relative">
+            <Toaster />
             <div className="max-w-7xl mx-auto px-4">
                 <div className="mb-8">
                     <h1 className="text-2xl font-bold mb-4">Check Your Orders</h1>
@@ -147,18 +201,28 @@ const CheckOrder = () => {
                                                             {item.status}
                                                         </span>
                                                         {item.status === 'Pending' && (
-                                                            <button
-                                                                onClick={() => handleReturn(order, index)}
-                                                                disabled={returningOrder === `${order._id}-${index}`}
-                                                                className="ml-2 p-1 text-blue-600 hover:text-blue-800 focus:outline-none disabled:opacity-50"
-                                                                title="Return Item"
-                                                            >
-                                                                {returningOrder === `${order._id}-${index}` ? (
-                                                                    <Loader className="h-5 w-5 animate-spin" />
-                                                                ) : (
-                                                                    <RotateCcw className="h-5 w-5" />
-                                                                )}
-                                                            </button>
+                                                            <div className="flex items-center space-x-2">
+                                                                <input
+                                                                    type="number"
+                                                                    min="1"
+                                                                    max={item.quantity}
+                                                                    value={returnQuantities[`${order._id}-${item._id}`] || item.quantity}
+                                                                    onChange={(e) => handleReturnQuantityChange(order._id, item._id, e.target.value, item.quantity)}
+                                                                    className="w-16 p-1 border rounded focus:ring-blue-500 focus:border-blue-500"
+                                                                />
+                                                                <button
+                                                                    onClick={() => handleReturn(order, index)}
+                                                                    disabled={returningOrder === `${order._id}-${item._id}`}
+                                                                    className="ml-2 p-1 text-blue-600 hover:text-blue-800 focus:outline-none disabled:opacity-50"
+                                                                    title="Return Item"
+                                                                >
+                                                                    {returningOrder === `${order._id}-${item._id}` ? (
+                                                                        <Loader className="h-5 w-5 animate-spin" />
+                                                                    ) : (
+                                                                        <RotateCcw className="h-5 w-5" />
+                                                                    )}
+                                                                </button>
+                                                            </div>
                                                         )}
                                                     </div>
                                                 </div>
@@ -171,6 +235,70 @@ const CheckOrder = () => {
                     </div>
                 )}
             </div>
+
+            {/* Chat Button */}
+            <button
+                onClick={() => setShowChat(true)}
+                className="fixed bottom-4 right-4 bg-blue-600 text-white p-3 rounded-full shadow-lg hover:bg-blue-700 transition-colors"
+            >
+                <MessageSquare className="h-6 w-6" />
+            </button>
+
+            {/* Chat Window */}
+            {showChat && (
+                <div className="fixed bottom-20 right-4 w-96 bg-white rounded-lg shadow-xl">
+                    <div className="flex justify-between items-center p-4 border-b">
+                        <h3 className="font-medium">Chat with Admin</h3>
+                        <button
+                            onClick={() => setShowChat(false)}
+                            className="text-gray-500 hover:text-gray-700"
+                        >
+                            <X className="h-5 w-5" />
+                        </button>
+                    </div>
+                    <div className="h-96 overflow-y-auto p-4 space-y-4">
+                        {chatMessages.map(msg => (
+                            <div
+                                key={msg.id}
+                                className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+                            >
+                                <div
+                                    className={`max-w-[80%] rounded-lg p-3 ${
+                                        msg.sender === 'user'
+                                            ? 'bg-blue-600 text-white'
+                                            : 'bg-gray-100 text-gray-800'
+                                    }`}
+                                >
+                                    <p>{msg.text}</p>
+                                    <p className={`text-xs mt-1 ${
+                                        msg.sender === 'user' ? 'text-blue-100' : 'text-gray-500'
+                                    }`}>
+                                        {new Date(msg.timestamp).toLocaleTimeString()}
+                                    </p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                    <div className="p-4 border-t">
+                        <div className="flex space-x-2">
+                            <input
+                                type="text"
+                                value={message}
+                                onChange={(e) => setMessage(e.target.value)}
+                                placeholder="Type your message..."
+                                className="flex-1 p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                            />
+                            <button
+                                onClick={handleSendMessage}
+                                className="bg-blue-600 text-white p-2 rounded-lg hover:bg-blue-700"
+                            >
+                                <Send className="h-5 w-5" />
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
