@@ -14,9 +14,9 @@ const PORT = process.env.PORT || 5000;
 const MONGO_URI = process.env.MONGO_URI;
 
 // Allow both local dev and deployed frontend
-const allowedOrigin = [
+const allowedOrigins = [
   "http://localhost:5173",
-  "https://ordering-system-heto.vercel.app",
+  "https://ordering-system-heto.vercel.app"
 ];
 
 
@@ -26,7 +26,7 @@ const server = http.createServer(app);
 // Initialize Socket.IO
 const io = new Server(server, {
   cors: {
-    origin: allowedOrigin,
+    origin: allowedOrigins,
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"]
@@ -37,7 +37,7 @@ const io = new Server(server, {
 app.use(
   cors({
     origin: function (origin, callback) {
-      if (!origin || allowedOrigin.includes(origin)) {
+      if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
         callback(new Error("Not allowed by CORS: " + origin));
@@ -60,10 +60,10 @@ app.use(
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
-      secure: false, // Set to true if using HTTPS
-      maxAge: 24 * 60 * 60 * 1000, // 1 day
-      sameSite: "lax"
-    }
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "none",
+      maxAge: 24 * 60 * 60 * 1000
+    }    
   })
 );
 
