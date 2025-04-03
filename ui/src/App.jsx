@@ -6,23 +6,36 @@ import AdminDashboard from './pages/admin/AdminDashboard';
 import CreateOrder from './pages/user/CreateOrder';
 import CheckOrder from './pages/user/CheckOrder';
 import './App.css'
+import SuperAdminDashboard from './components/SuperAdminDashboard';
 
 const App = () => {
-  const [admin, setAdmin] = useState(null);
+  const [user, setUser] = useState(null);
+
+  const handleLogout = () => {
+    setUser(null);
+  };
 
   return (
       <Router>
         <div className="min-h-screen bg-gray-50">
-          <Navbar admin={admin} />
+          <Navbar user={user} onLogout={handleLogout}/>
           <Routes>
             {/* Admin Routes */}
             <Route
                 path="/admin"
-                element={admin ? <Navigate to="/admin/dashboard" /> : <AdminLogin onLogin={setAdmin} />}
+                element={user ? <Navigate to="/admin/dashboard" /> : <AdminLogin onLogin={setUser} />}
             />
             <Route
                 path="/admin/dashboard"
-                element={admin ? <AdminDashboard admin={admin} /> : <Navigate to="/admin" />}
+                element={
+                  user ? (
+                    user?.role === 'superadmin' ? 
+                      <SuperAdminDashboard /> : 
+                      <AdminDashboard />
+                  ) : (
+                    <Navigate to="/admin" />
+                  )
+                }
             />
 
             {/* User Routes (No login required) */}
