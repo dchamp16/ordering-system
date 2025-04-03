@@ -14,6 +14,10 @@ const ChatSystem = ({ userId, userName, userRole = 'user', autoShow = false }) =
   const messagesEndRef = useRef(null);
   const socketRef = useRef(null);
 
+  const SOCKET_SERVER_URL = import.meta.env.PROD
+  ? 'https://ordering-system-s8uu.onrender.com'
+  : 'http://localhost:5000';
+
   useEffect(() => {
     if (!userId || !userName) {
       console.warn('Missing required props for chat system');
@@ -21,7 +25,7 @@ const ChatSystem = ({ userId, userName, userRole = 'user', autoShow = false }) =
     }
 
     // Initialize socket connection
-    socketRef.current = io('http://localhost:5000', {
+    socketRef.current = io(SOCKET_SERVER_URL, {
       withCredentials: true,
       query: {
         userId,
