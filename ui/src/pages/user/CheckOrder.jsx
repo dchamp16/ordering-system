@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Package, Loader, Search, RotateCcw, MessageSquare, Send, X } from 'lucide-react';
+import { Package, Loader, Search, RotateCcw } from 'lucide-react';
 import { toast, Toaster } from 'react-hot-toast';
 import axiosInstance from '../../utils/axiosInstance';
+import ChatSystem from '../../components/ChatSystem';
 
 const CheckOrder = () => {
     const [orders, setOrders] = useState([]);
@@ -10,9 +11,6 @@ const CheckOrder = () => {
     const [searchEmpId, setSearchEmpId] = useState('');
     const [returningOrder, setReturningOrder] = useState(null);
     const [returnQuantities, setReturnQuantities] = useState({});
-    const [showChat, setShowChat] = useState(false);
-    const [message, setMessage] = useState('');
-    const [chatMessages, setChatMessages] = useState([]);
 
     const handleSearch = async (e) => {
         e.preventDefault();
@@ -86,31 +84,6 @@ const CheckOrder = () => {
         } finally {
             setReturningOrder(null);
         }
-    };
-
-    const handleSendMessage = () => {
-        if (!message.trim()) return;
-
-        const newMessage = {
-            id: Date.now(),
-            text: message,
-            sender: 'user',
-            timestamp: new Date().toISOString()
-        };
-
-        setChatMessages(prev => [...prev, newMessage]);
-        setMessage('');
-
-        // Simulate admin response
-        setTimeout(() => {
-            const adminResponse = {
-                id: Date.now() + 1,
-                text: "Thank you for your message. An admin will respond shortly.",
-                sender: 'admin',
-                timestamp: new Date().toISOString()
-            };
-            setChatMessages(prev => [...prev, adminResponse]);
-        }, 1000);
     };
 
     if (loading) {
@@ -235,6 +208,15 @@ const CheckOrder = () => {
                     </div>
                 )}
             </div>
+
+            {orders.length > 0 && (
+                <ChatSystem
+                    userId={searchEmpId}
+                    userName={orders[0]?.empName || `User ${searchEmpId}`}
+                    userRole="user"
+                    autoShow={false}
+                />
+            )}
         </div>
     );
 };

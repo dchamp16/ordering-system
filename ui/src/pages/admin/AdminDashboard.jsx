@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react';
 import { Package, Loader, RotateCcw, ChevronDown, Filter } from 'lucide-react';
 import { toast, Toaster } from 'react-hot-toast';
 import axiosInstance from '../../utils/axiosInstance';
+import ChatSystem from '../../components/ChatSystem';
 
-const AdminDashboard = () => {
+const AdminDashboard = ({ user }) => {
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
@@ -12,7 +13,6 @@ const AdminDashboard = () => {
     const [filterStatus, setFilterStatus] = useState('all');
     const [showStatusDropdown, setShowStatusDropdown] = useState(null);
     const [showConfirmDialog, setShowConfirmDialog] = useState(null);
-    const [confirmAction, setConfirmAction] = useState(null);
 
     const fetchOrders = async () => {
         try {
@@ -126,8 +126,8 @@ const AdminDashboard = () => {
     return (
         <div className="min-h-screen bg-gray-50 py-8 relative">
             <Toaster />
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 space-y-4 sm:space-y-0">
+            <div className="max-w-7xl mx-auto px-4">
+                <div className="flex justify-between items-center mb-6">
                     <h1 className="text-2xl font-bold">All Orders</h1>
                     <div className="flex items-center space-x-2">
                         <Filter className="h-5 w-5 text-gray-500" />
@@ -158,7 +158,7 @@ const AdminDashboard = () => {
                     <div className="grid gap-6">
                         {filteredOrders.map((order) => (
                             <div key={order._id} className="bg-white rounded-lg shadow p-6">
-                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                                     <div>
                                         <p className="text-sm text-gray-600">Order Date</p>
                                         <p className="font-medium">{order.date}</p>
@@ -181,9 +181,9 @@ const AdminDashboard = () => {
                                     <h3 className="font-medium mb-2">Order Items</h3>
                                     <div className="space-y-2">
                                         {order.orders.map((item, index) => (
-                                            <div key={index} className="flex flex-col sm:flex-row justify-between items-start sm:items-center py-2 space-y-2 sm:space-y-0">
+                                            <div key={index} className="flex justify-between items-center py-2">
                                                 <span className="font-medium">{item.hardwareOldNumber}</span>
-                                                <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
+                                                <div className="flex items-center space-x-4">
                                                     <span className="text-gray-600">Qty: {item.quantity}</span>
                                                     <div className="flex items-center space-x-2">
                                                         <div className="relative">
@@ -250,7 +250,15 @@ const AdminDashboard = () => {
                 )}
             </div>
 
-            {/* Confirmation Dialog */}
+            {user && (
+                <ChatSystem
+                    userId={user.id}
+                    userName={user.username}
+                    userRole={user.role}
+                    autoShow={false}
+                />
+            )}
+
             {showConfirmDialog && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                     <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">

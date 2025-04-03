@@ -5,8 +5,9 @@ import AdminLogin from './pages/admin/AdminLogin';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import CreateOrder from './pages/user/CreateOrder';
 import CheckOrder from './pages/user/CheckOrder';
+import SuperAdminDashboard from './pages/superadmin/SuperAdminDashboard';
 import './App.css'
-import SuperAdminDashboard from './components/SuperAdminDashboard';
+
 
 const App = () => {
   const [user, setUser] = useState(null);
@@ -16,34 +17,34 @@ const App = () => {
   };
 
   return (
-      <Router>
-        <div className="min-h-screen bg-gray-50">
-          <Navbar user={user} onLogout={handleLogout}/>
-          <Routes>
-            {/* Admin Routes */}
-            <Route
-                path="/admin"
-                element={user ? <Navigate to="/admin/dashboard" /> : <AdminLogin onLogin={setUser} />}
-            />
-            <Route
-                path="/admin/dashboard"
-                element={
-                  user ? (
-                    user?.role === 'superadmin' ? 
-                      <SuperAdminDashboard /> : 
-                      <AdminDashboard />
-                  ) : (
-                    <Navigate to="/admin" />
-                  )
-                }
-            />
+    <Router>
+      <div className="min-h-screen bg-gray-50">
+        <Navbar user={user} onLogout={handleLogout} />
+        <Routes>
+          {/* Admin Routes */}
+          <Route
+            path="/admin"
+            element={user ? <Navigate to="/admin/dashboard" /> : <AdminLogin onLogin={setUser} />}
+          />
+          <Route
+            path="/admin/dashboard"
+            element={
+              user ? (
+                user.role === 'superadmin' ? 
+                  <SuperAdminDashboard user={user} onLogout={handleLogout} /> : 
+                  <AdminDashboard user={user} onLogout={handleLogout} />
+              ) : (
+                <Navigate to="/admin" />
+              )
+            }
+          />
 
-            {/* User Routes (No login required) */}
-            <Route path="/" element={<CreateOrder />} />
-            <Route path="/check-order" element={<CheckOrder />} />
-          </Routes>
-        </div>
-      </Router>
+          {/* User Routes (No login required) */}
+          <Route path="/" element={<CreateOrder />} />
+          <Route path="/check-order" element={<CheckOrder />} />
+        </Routes>
+      </div>
+    </Router>
   );
 };
 

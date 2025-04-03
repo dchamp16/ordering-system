@@ -1,14 +1,15 @@
 import { useState } from 'react';
 import { Users, Package, ClipboardList, Upload, LogOut, Menu } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import AdminManagement from '../pages/superadmin/AdminManagement';
-import HardwareManagement from '../pages/superadmin/HardwareManagement';
-import AuditLogs from '../pages/superadmin/AuditLogs';
-import AdminDashboard from '../pages/admin/AdminDashboard';
-import axiosInstance from '../utils/axiosInstance';
+import AdminManagement from './AdminManagement';
+import HardwareManagement from './HardwareManagement';
+import AuditLogs from './AuditLogs';
+import AdminDashboard from '../admin/AdminDashboard';
+import axiosInstance from '../../utils/axiosInstance';
 import { toast } from 'react-hot-toast';
+import ChatSystem from '../../components/ChatSystem';
 
-const SuperAdminDashboard = () => {
+const SuperAdminDashboard = ({ user }) => {
   const [activeTab, setActiveTab] = useState('orders');
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const navigate = useNavigate();
@@ -20,20 +21,10 @@ const SuperAdminDashboard = () => {
     { id: 'logs', label: 'Audit Logs', icon: ClipboardList },
   ];
 
-  const handleLogout = async () => {
-    try {
-      await axiosInstance.get('/auth/logout');
-      navigate('/');
-      window.location.reload();
-    } catch (err) {
-      toast.error('Failed to logout');
-    }
-  };
-
   const renderContent = () => {
     switch (activeTab) {
       case 'orders':
-        return <AdminDashboard />;
+        return <AdminDashboard user={user} />;
       case 'admins':
         return <AdminManagement />;
       case 'hardware':
@@ -41,7 +32,7 @@ const SuperAdminDashboard = () => {
       case 'logs':
         return <AuditLogs />;
       default:
-        return <AdminDashboard />;
+        return <AdminDashboard user={user} />;
     }
   };
 
@@ -114,6 +105,16 @@ const SuperAdminDashboard = () => {
           {renderContent()}
         </div>
       </div>
+
+      {/* Chat System */}
+      {user && (
+        <ChatSystem
+          userId={user._id}
+          userName={user.username}
+          userRole="superadmin"
+          autoShow={false}
+        />
+      )}
     </div>
   );
 };
