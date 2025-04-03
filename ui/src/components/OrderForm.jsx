@@ -280,7 +280,7 @@ const OrderForm = () => {
                     onClick={() => handleSort('hardwareOldNumber')}
                   >
                     <div className="flex items-center">
-                      Number
+                      Hardware Name
                       <SortIcon columnKey="hardwareOldNumber" />
                     </div>
                   </th>
@@ -290,7 +290,7 @@ const OrderForm = () => {
                     onClick={() => handleSort('hardwareName')}
                   >
                     <div className="flex items-center">
-                      Name
+                      Description
                       <SortIcon columnKey="hardwareName" />
                     </div>
                   </th>
