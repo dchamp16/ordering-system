@@ -5,6 +5,7 @@ const connectDB = require("./config/database");
 const session = require("express-session");
 const http = require("http");
 const { Server } = require("socket.io");
+const MongoStore = require('connect-mongo');
 
 // Load environment variables
 dotenv.config();
@@ -58,6 +59,10 @@ app.use(
     secret: process.env.SESSION_SECRET || "your-secret-key",
     resave: false,
     saveUninitialized: false,
+    store: MongoStore.create({
+      mongoUrl: MONGO_URI,
+      collectionName: 'sessions'
+    }),
     cookie: {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
