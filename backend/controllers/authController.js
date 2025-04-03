@@ -1,3 +1,6 @@
+const User = require("../models/userModel");
+const bcrypt = require("bcrypt");
+
 exports.login = async (req, res) => {
   const { username, password } = req.body;
   try {
@@ -12,26 +15,21 @@ exports.login = async (req, res) => {
     }
 
     // Store user data in session
-    req.session.user = {
-      id: user._id,
-      username: user.username,
-      role: user.role,
-    };
-
-    // Save session before sending response
-    req.session.save((err) => {
-      if (err) {
-        console.error("Session save error:", err);
-        return res.status(500).json({ error: "Failed to save session" });
-      }
-
-      return res.json({
-        message: "Login successful",
-        user: req.session.user,
-      });
+    req.session.user = { id: user._id, username: user.username, role: user.role };
+    res.json({
+      message: "Login successful",
+      user: req.session.user,
     });
   } catch (err) {
-    console.error("Login error:", err);
     res.status(500).json({ error: "Server error during login" });
   }
+};
+
+exports.logout = (req, res) => {
+  req.session.destroy((err) => {
+    if (err) {
+      return res.status(500).json({ error: "Failed to logout" });
+    }
+    res.json({ message: "Logout successful" });
+  });
 };
