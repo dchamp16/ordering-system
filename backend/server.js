@@ -1,7 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
-const connectDB = require("../config/database");
+const connectDB = require("./config/database");
 const session = require("express-session");
 const http = require('http');
 const { Server } = require('socket.io');
@@ -12,6 +12,7 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 const MONGO_URI = process.env.MONGO_URI;
+const allowedOrigin = process.env.FRONTEND_URL || "http://localhost:5173";
 
 // Create HTTP Server
 const server = http.createServer(app);
@@ -19,15 +20,15 @@ const server = http.createServer(app);
 // Initialize Socket.IO
 const io = new Server(server, {
     cors: {
-        origin: "http://localhost:5173",
+        origin: allowedOrigin,
         credentials: true,
         methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     }
 });
 
 // Middleware
-app.use(cors({ 
-    origin: "http://localhost:5173", 
+app.use(cors({
+    origin: allowedOrigin,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
@@ -64,12 +65,13 @@ app.get("/api/auth/set-admin-session", (req, res) => {
     res.json({ message: "Admin session set", session: req.session });
 });
 
-app.use("/api/orders", require("../routes/orderRoutes"));
-app.use("/api/admin", require("../routes/adminRoutes"));
-app.use("/api/auth", require("../routes/authRoutes"));
-app.use("/api/users", require("../routes/userRoutes"));
-app.use("/api/audit-logs", require("../routes/auditLogRoutes"));
-app.use("/api/hardware", require("../routes/hardwareRoutes"));
+// Routes
+app.use("/api/orders", require("./routes/orderRoutes"));
+app.use("/api/admin", require("./routes/adminRoutes"));
+app.use("/api/auth", require("./routes/authRoutes"));
+app.use("/api/users", require("./routes/userRoutes"));
+app.use("/api/audit-logs", require("./routes/auditLogRoutes"));
+app.use("/api/hardware", require("./routes/hardwareRoutes"));
 
 // Socket.IO State
 const connectedUsers = new Map();
@@ -81,20 +83,13 @@ io.on("connection", (socket) => {
 
     socket.on("register", (data) => {
         const { userId, userName, userRole } = data;
-        
         if (!userId || !userName) {
             console.log("Invalid registration data:", data);
             socket.disconnect();
             return;
         }
 
-        console.log("Registering:", { userId, userName, userRole });
-
-        const userInfo = {
-            socketId: socket.id,
-            userName,
-            userId
-        };
+        const userInfo = { socketId: socket.id, userName, userId };
 
         if (userRole === 'admin' || userRole === 'superadmin') {
             connectedAdmins.set(userId, userInfo);
@@ -102,15 +97,11 @@ io.on("connection", (socket) => {
             connectedUsers.set(userId, userInfo);
         }
 
-        // Broadcast updated online status
         broadcastOnlineStatus();
     });
 
     socket.on("private_message", ({ to, message, from, fromName }) => {
-        console.log("Private message:", { to, message, from, fromName });
-        
         const recipient = connectedUsers.get(to) || connectedAdmins.get(to);
-        
         if (recipient) {
             io.to(recipient.socketId).emit("receive_message", {
                 message,
@@ -122,14 +113,13 @@ io.on("connection", (socket) => {
     });
 
     socket.on("disconnect", () => {
-        // Find and remove the disconnected user
         for (const [userId, info] of connectedUsers.entries()) {
             if (info.socketId === socket.id) {
                 connectedUsers.delete(userId);
                 break;
             }
         }
-        
+
         for (const [userId, info] of connectedAdmins.entries()) {
             if (info.socketId === socket.id) {
                 connectedAdmins.delete(userId);
@@ -153,7 +143,6 @@ function broadcastOnlineStatus() {
         name: admin.userName
     }));
 
-    console.log("Broadcasting online status:", { users, admins });
     io.emit("online_status", { users, admins });
 }
 
