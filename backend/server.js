@@ -14,7 +14,7 @@ const PORT = process.env.PORT || 5000;
 const MONGO_URI = process.env.MONGO_URI;
 
 // Allow both local dev and deployed frontend
-const allowedOrigins = [
+const allowedOrigin = [
   "http://localhost:5173",
   "https://ordering-system-heto.vercel.app",
 ];
@@ -37,7 +37,7 @@ const io = new Server(server, {
 app.use(
   cors({
     origin: function (origin, callback) {
-      if (!origin || allowedOrigins.includes(origin)) {
+      if (!origin || allowedOrigin.includes(origin)) {
         callback(null, true);
       } else {
         callback(new Error("Not allowed by CORS: " + origin));
