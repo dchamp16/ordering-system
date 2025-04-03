@@ -1,7 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
-const connectDB = require("./config/database");
+const connectDB = require("../config/database");
 const session = require("express-session");
 const http = require('http');
 const { Server } = require('socket.io');
@@ -64,12 +64,12 @@ app.get("/api/auth/set-admin-session", (req, res) => {
     res.json({ message: "Admin session set", session: req.session });
 });
 
-app.use("/api/orders", require("./routes/orderRoutes"));
-app.use("/api/admin", require("./routes/adminRoutes"));
-app.use("/api/auth", require("./routes/authRoutes"));
-app.use("/api/users", require("./routes/userRoutes"));
-app.use("/api/audit-logs", require("./routes/auditLogRoutes"));
-app.use("/api/hardware", require("./routes/hardwareRoutes"));
+app.use("/api/orders", require("../routes/orderRoutes"));
+app.use("/api/admin", require("../routes/adminRoutes"));
+app.use("/api/auth", require("../routes/authRoutes"));
+app.use("/api/users", require("../routes/userRoutes"));
+app.use("/api/audit-logs", require("../routes/auditLogRoutes"));
+app.use("/api/hardware", require("../routes/hardwareRoutes"));
 
 // Socket.IO State
 const connectedUsers = new Map();

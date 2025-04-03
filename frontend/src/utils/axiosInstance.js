@@ -1,14 +1,13 @@
 import axios from 'axios';
 
-const PORT = 5000;
+const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
 
 const axiosInstance = axios.create({
-    baseURL: `http://localhost:${PORT}/api`,
+    baseURL: `${baseURL}/api`,
     withCredentials: true,
     headers: {
         'Content-Type': 'application/json',
     },
-    // Adding default timeout
     timeout: 10000,
 });
 
