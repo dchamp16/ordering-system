@@ -17,7 +17,7 @@ const MONGO_URI = process.env.MONGO_URI;
 // CORS must be applied BEFORE session
 const allowedOrigins = [
   "https://ordering-system-heto.vercel.app",
-  "http://localhost:5173",
+  "http://localhost:5173"
 ];
 
 app.use(

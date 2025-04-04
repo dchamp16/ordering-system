@@ -15,7 +15,7 @@ const ChatSystem = ({ userId, userName, userRole = 'user', autoShow = false }) =
   const socketRef = useRef(null);
 
   const SOCKET_SERVER_URL = import.meta.env.PROD
-  ? 'https://ordering-system-s8uu.onrender.com'
+  ? 'https://ordering-system-production.up.railway.app/'
   : 'http://localhost:5000';
 
   useEffect(() => {

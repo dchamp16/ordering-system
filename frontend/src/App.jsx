@@ -15,9 +15,6 @@ const App = () => {
   const handleLogout = () => {
     setUser(null);
   };
-  const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
-
-  console.log("test: ", baseURL)
 
   return (
     <Router>
