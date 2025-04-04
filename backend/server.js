@@ -13,6 +13,7 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 const MONGO_URI = process.env.MONGO_URI;
+const isProduction = process.env.NODE_ENV === "production";
 
 // Allow both local dev and deployed frontend
 const allowedOrigins = [
@@ -66,9 +67,9 @@ app.use(
     cookie: {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "none",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
       maxAge: 24 * 60 * 60 * 1000
-    }    
+    }
   })
 );
 
