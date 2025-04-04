@@ -5,7 +5,7 @@ const connectDB = require("./config/database");
 const session = require("express-session");
 const http = require("http");
 const { Server } = require("socket.io");
-const MongoStore = require('connect-mongo');
+const MongoStore = require("connect-mongo");
 
 // Load environment variables
 dotenv.config();
@@ -13,29 +13,13 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 const MONGO_URI = process.env.MONGO_URI;
-const isProduction = process.env.NODE_ENV === "production";
 
-// Allow both local dev and deployed frontend
+// CORS must be applied BEFORE session
 const allowedOrigins = [
+  "https://ordering-system-heto.vercel.app",
   "http://localhost:5173",
-  "https://ordering-system-heto.vercel.app"
 ];
 
-
-// Create HTTP Server
-const server = http.createServer(app);
-
-// Initialize Socket.IO
-const io = new Server(server, {
-  cors: {
-    origin: allowedOrigins,
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"]
-  }
-});
-
-// Middleware
 app.use(
   cors({
     origin: function (origin, callback) {
@@ -54,7 +38,7 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Session configuration
+// Session config
 app.use(
   session({
     secret: process.env.SESSION_SECRET || "your-secret-key",
@@ -62,27 +46,39 @@ app.use(
     saveUninitialized: false,
     store: MongoStore.create({
       mongoUrl: MONGO_URI,
-      collectionName: 'sessions'
+      collectionName: "sessions",
     }),
     cookie: {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-      maxAge: 24 * 60 * 60 * 1000
-    }
+      secure: true, // Always true for HTTPS (Render)
+      sameSite: "none", // Required for cross-origin cookies
+      maxAge: 24 * 60 * 60 * 1000, // 1 day
+    },
   })
 );
 
-// Debug middleware to log session
+// HTTP server for Socket.IO
+const server = http.createServer(app);
+
+// Socket.IO setup
+const io = new Server(server, {
+  cors: {
+    origin: allowedOrigins,
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  },
+});
+
+// Session logger
 app.use((req, res, next) => {
   console.log("Session:", req.session);
   next();
 });
 
-// Set admin session route
+// Dev-only route to manually set admin session
 app.get("/api/auth/set-admin-session", (req, res) => {
   req.session.user = { role: "admin" };
-  console.log("Session set:", req.session.user);
   res.json({ message: "Admin session set", session: req.session });
 });
 
@@ -94,23 +90,18 @@ app.use("/api/users", require("./routes/userRoutes"));
 app.use("/api/audit-logs", require("./routes/auditLogRoutes"));
 app.use("/api/hardware", require("./routes/hardwareRoutes"));
 
-// Socket.IO State
+// Socket.IO logic
 const connectedUsers = new Map();
 const connectedAdmins = new Map();
 
-// Socket.IO Connection Handler
 io.on("connection", (socket) => {
   console.log("New connection:", socket.id);
 
   socket.on("register", (data) => {
     const { userId, userName, userRole } = data;
-    if (!userId || !userName) {
-      console.log("Invalid registration data:", data);
-      socket.disconnect();
-      return;
-    }
-
     const userInfo = { socketId: socket.id, userName, userId };
+
+    if (!userId || !userName) return socket.disconnect();
 
     if (userRole === "admin" || userRole === "superadmin") {
       connectedAdmins.set(userId, userInfo);
@@ -128,7 +119,7 @@ io.on("connection", (socket) => {
         message,
         from,
         fromName,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     }
   });
@@ -154,22 +145,22 @@ io.on("connection", (socket) => {
 });
 
 function broadcastOnlineStatus() {
-  const users = Array.from(connectedUsers.values()).map((user) => ({
-    id: user.userId,
-    name: user.userName
+  const users = Array.from(connectedUsers.values()).map((u) => ({
+    id: u.userId,
+    name: u.userName,
   }));
 
-  const admins = Array.from(connectedAdmins.values()).map((admin) => ({
-    id: admin.userId,
-    name: admin.userName
+  const admins = Array.from(connectedAdmins.values()).map((a) => ({
+    id: a.userId,
+    name: a.userName,
   }));
 
   io.emit("online_status", { users, admins });
 }
 
-// Connect DB and Start Server
+// Start server
 connectDB(MONGO_URI).then(() => {
   server.listen(PORT, () => {
-    console.log(`Server with Socket.IO running at http://localhost:${PORT}`);
+    console.log(`Server running at http://localhost:${PORT}`);
   });
 });
