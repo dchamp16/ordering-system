@@ -343,13 +343,14 @@ const OrderForm = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       <input
-                        type="number"
-                        min="1"
-                        max={item.quantity}
-                        value={quantities[item.hardwareOldNumber] || 1}
-                        onChange={(e) => handleQuantityChange(item.hardwareOldNumber, e.target.value)}
-                        className="w-20 p-1 border rounded focus:ring-blue-500 focus:border-blue-500"
-                      />
+  type="number"
+  min="1"
+  max={item.quantity}
+  value={quantities[item.hardwareOldNumber] || 1}
+  onChange={(e) => handleQuantityChange(item.hardwareOldNumber, e.target.value)}
+  onFocus={(e) => e.target.select()}
+  className="w-20 p-1 border rounded focus:ring-blue-500 focus:border-blue-500"
+/>
                     </td>
                   </tr>
                 ))}
