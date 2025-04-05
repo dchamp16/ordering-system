@@ -72,7 +72,7 @@ app.use("/api/admin", require("./routes/adminRoutes"));
 app.use("/api/auth", require("./routes/authRoutes"));
 app.use("/api/users", verifyToken, require("./routes/userRoutes"));
 app.use("/api/audit-logs", verifyToken, require("./routes/auditLogRoutes"));
-app.use("/api/hardware", verifyToken, require("./routes/hardwareRoutes"));
+app.use("/api/hardware",require("./routes/hardwareRoutes"));
 
 // Socket.IO logic
 const connectedUsers = new Map();
