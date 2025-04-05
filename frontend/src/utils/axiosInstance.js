@@ -1,9 +1,9 @@
 import axios from 'axios';
-// import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
-const baseURL = 'http://localhost:5000'
+
+const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 
 const axiosInstance = axios.create({
-    baseURL: `${baseURL}/api/`,
+    baseURL: `${baseURL}api`,
   });
   
   axiosInstance.interceptors.request.use(
@@ -12,6 +12,7 @@ const axiosInstance = axios.create({
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }
+      console.log('[AXIOS] Using token:', token);
       return config;
     },
     (error) => Promise.reject(error)
