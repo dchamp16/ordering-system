@@ -16,7 +16,7 @@ const { uploadHardware } = require("../controllers/excelController");
 
 const upload = multer({ dest: "uploads/" });
 
-router.get("/", verifyToken, verifyAdmin, getHardware);
+router.get("/", verifyAdmin, getHardware);
 router.post("/", verifyToken, verifySuperAdmin, addHardware);
 router.put("/:id", verifyToken, verifySuperAdmin, updateHardware);
 router.delete("/:id", verifyToken, verifySuperAdmin, deleteHardware);
