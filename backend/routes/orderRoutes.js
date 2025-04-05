@@ -8,9 +8,9 @@ const {
 } = require("../controllers/orderController");
 const { verifyToken } = require("../middleware/authMiddleware");
 
-router.get("/", verifyToken, getAllOrders);
-router.get("/:empId", verifyToken, getEmpOrders);
-router.post("/", verifyToken, createOrder);
-router.post("/return", verifyToken, returnHardware);
+router.get("/", getAllOrders);
+router.get("/:empId", getEmpOrders);
+router.post("/", createOrder);
+router.post("/return", returnHardware);
 
 module.exports = router;
