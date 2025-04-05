@@ -9,8 +9,8 @@ const {
 const { verifyToken } = require("../middleware/authMiddleware");
 
 router.get("/",verifyToken, getAllOrders);
-router.get("/:empId",verifyToken, getEmpOrders);
-router.post("/",verifyToken, createOrder);
+router.get("/:empId", getEmpOrders);
+router.post("/", createOrder);
 router.post("/return",verifyToken, returnHardware);
 
 module.exports = router;
