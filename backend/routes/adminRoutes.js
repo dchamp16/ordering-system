@@ -1,17 +1,19 @@
 const express = require("express");
 const router = express.Router();
 const {
+  verifyToken,
+  verifyAdmin
+} = require("../middleware/authMiddleware");
+const {
   getEmpOrders,
   getAllOrders,
   createOrder,
   updateOrder,
   deleteOrder,
 } = require("../controllers/orderController");
-const { verifyAdmin } = require("../middleware/auth");
 
-router.use(verifyAdmin);
+router.use(verifyToken, verifyAdmin);
 
-// Routes
 router.get("/orders/:empId", getEmpOrders);
 router.get("/orders", getAllOrders);
 router.post("/orders", createOrder);

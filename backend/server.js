@@ -2,10 +2,9 @@ const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
 const connectDB = require("./config/database");
-const session = require("express-session");
 const http = require("http");
 const { Server } = require("socket.io");
-const MongoStore = require("connect-mongo");
+const jwt = require("jsonwebtoken");
 
 // Load environment variables
 dotenv.config();
@@ -13,8 +12,8 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 const MONGO_URI = process.env.MONGO_URI;
+const JWT_SECRET = process.env.JWT_SECRET;
 
-// CORS must be applied BEFORE session
 const allowedOrigins = [
   "https://ordering-system-heto.vercel.app",
   "http://localhost:5173"
@@ -38,25 +37,6 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Session config
-app.use(
-  session({
-    secret: process.env.SESSION_SECRET || "your-secret-key",
-    resave: false,
-    saveUninitialized: false,
-    store: MongoStore.create({
-      mongoUrl: MONGO_URI,
-      collectionName: "sessions",
-    }),
-    cookie: {
-      httpOnly: true,
-      secure: true, // Always true for HTTPS (Render)
-      sameSite: "none", // Required for cross-origin cookies
-      maxAge: 24 * 60 * 60 * 1000, // 1 day
-    },
-  })
-);
-
 // HTTP server for Socket.IO
 const server = http.createServer(app);
 
@@ -70,25 +50,28 @@ const io = new Server(server, {
   },
 });
 
-// Session logger
-app.use((req, res, next) => {
-  console.log("Session:", req.session);
-  next();
-});
+// JWT verification middleware
+const verifyToken = (req, res, next) => {
+  const authHeader = req.headers["authorization"];
+  if (!authHeader) return res.status(403).json({ error: "Access denied" });
 
-// Dev-only route to manually set admin session
-app.get("/api/auth/set-admin-session", (req, res) => {
-  req.session.user = { role: "admin" };
-  res.json({ message: "Admin session set", session: req.session });
-});
+  const token = authHeader.split(" ")[1];
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    req.user = decoded;
+    next();
+  } catch (err) {
+    return res.status(403).json({ error: "Invalid token" });
+  }
+};
 
 // Routes
 app.use("/api/orders", require("./routes/orderRoutes"));
 app.use("/api/admin", require("./routes/adminRoutes"));
 app.use("/api/auth", require("./routes/authRoutes"));
-app.use("/api/users", require("./routes/userRoutes"));
-app.use("/api/audit-logs", require("./routes/auditLogRoutes"));
-app.use("/api/hardware", require("./routes/hardwareRoutes"));
+app.use("/api/users", verifyToken, require("./routes/userRoutes"));
+app.use("/api/audit-logs", verifyToken, require("./routes/auditLogRoutes"));
+app.use("/api/hardware", verifyToken, require("./routes/hardwareRoutes"));
 
 // Socket.IO logic
 const connectedUsers = new Map();

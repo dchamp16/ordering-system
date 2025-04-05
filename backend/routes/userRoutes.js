@@ -1,18 +1,22 @@
 const express = require("express");
 const router = express.Router();
 const {
+  verifyToken,
+  verifyAdmin,
+  verifySuperAdmin
+} = require("../middleware/authMiddleware");
+const {
   addUser,
   getUsers,
   deleteUser,
   updateUser,
 } = require("../controllers/userController");
-const { verifyAdmin, verifySuperAdmin } = require("../middleware/auth");
 
-router.use(verifyAdmin);
+router.use(verifyToken, verifyAdmin);
 
-router.post("/", verifySuperAdmin, addUser); // Only Super Admin can add users
-router.get("/", getUsers); // Admins and Super Admins can view users
-router.put("/:id", verifySuperAdmin, updateUser); // Only Super Admin can update users
-router.delete("/:id", verifySuperAdmin, deleteUser); // Only Super Admin can delete users
+router.post("/", verifySuperAdmin, addUser);
+router.get("/", getUsers);
+router.put("/:id", verifySuperAdmin, updateUser);
+router.delete("/:id", verifySuperAdmin, deleteUser);
 
 module.exports = router;

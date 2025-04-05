@@ -35,7 +35,6 @@ const OrderForm = () => {
   useEffect(() => {
     const initializeSession = async () => {
       try {
-        await axiosInstance.get('/auth/set-admin-session');
         await fetchHardwareItems();
       } catch (err) {
         setError('Failed to load hardware items');

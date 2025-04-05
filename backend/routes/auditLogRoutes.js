@@ -1,9 +1,9 @@
 const express = require("express");
 const router = express.Router();
 const AuditLog = require("../models/auditLogModel");
-const { verifyAdmin } = require("../middleware/auth");
+const { verifyToken, verifyAdmin } = require("../middleware/authMiddleware");
 
-router.get("/", verifyAdmin, async (req, res) => {
+router.get("/", verifyToken, verifyAdmin, async (req, res) => {
   try {
     const logs = await AuditLog.find().sort({ date: -1 });
     res.json(logs);

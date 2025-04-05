@@ -39,7 +39,7 @@ exports.deleteUser = async (req, res) => {
     // Log the action
     await AuditLog.create({
       action: "User Deleted",
-      performedBy: req.session?.user?.username || "Unknown",
+      performedBy: req.user?.username || "Unknown",
       details: { userId: id, username: user.username },
     });
 

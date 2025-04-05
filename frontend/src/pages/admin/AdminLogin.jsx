@@ -13,7 +13,9 @@ const AdminLogin = ({ onLogin }) => {
 
         try {
             const response = await axiosInstance.post('/auth/login', { username, password });
+            localStorage.setItem('token', response.data.token);
             onLogin(response.data.user);
+
         } catch (err) {
             setError(err.response?.data?.error || 'Login failed');
         }
