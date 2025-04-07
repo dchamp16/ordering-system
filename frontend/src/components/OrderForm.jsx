@@ -379,5 +379,17 @@ const OrderForm = () => {
           >
             {loading ? (
               <>
-                <Loader className="animate-spin h-5 w-5
+                <Loader className="animate-spin h-5 w-5 mr-2" />
+                Processing...
+              </>
+            ) : (
+              'Submit Order'
+            )}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+};
+
 export default OrderForm;
