@@ -19,6 +19,7 @@ const OrderForm = () => {
   const [quantities, setQuantities] = useState({});
   const [hardwareItems, setHardwareItems] = useState([]);
   const [loadingHardware, setLoadingHardware] = useState(true);
+  const [searchQuery, setSearchQuery] = useState(''); // New state for search query
 
   const fetchHardwareItems = async () => {
     try {
@@ -88,11 +89,15 @@ const OrderForm = () => {
     }));
   };
 
-  const sortedHardwareItems = [...hardwareItems].sort((a, b) => {
+  const filteredHardwareItems = hardwareItems.filter(item =>
+    item.hardwareOldNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (item.hardwareName || item.hardwareDescription || '').toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const sortedHardwareItems = [...filteredHardwareItems].sort((a, b) => {
     let aValue = a[sortConfig.key];
     let bValue = b[sortConfig.key];
 
-    // Handle special cases for nested or computed values
     if (sortConfig.key === 'hardwareName') {
       aValue = a.hardwareName || a.hardwareDescription || '';
       bValue = b.hardwareName || b.hardwareDescription || '';
@@ -127,7 +132,6 @@ const OrderForm = () => {
         orders
       });
       
-      // Show success toast
       toast.success('Order submitted successfully!', {
         duration: 3000,
         position: 'top-center',
@@ -139,7 +143,6 @@ const OrderForm = () => {
         },
       });
 
-      // Reset form
       setFormData({
         empId: '',
         empName: '',
@@ -150,7 +153,6 @@ const OrderForm = () => {
       setSelectedItems(new Set());
       setQuantities({});
 
-      // Refresh hardware items
       await fetchHardwareItems();
     } catch (err) {
       const errorMessage = err.response?.data?.error || 'Failed to create order';
@@ -266,6 +268,16 @@ const OrderForm = () => {
         <div className="space-y-4">
           <h3 className="text-lg font-medium">Hardware Items</h3>
 
+          <div className="mb-4">
+            <input
+              type="text"
+              placeholder="Search hardware items..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full p-2 border rounded focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
@@ -343,14 +355,14 @@ const OrderForm = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       <input
-  type="number"
-  min="1"
-  max={item.quantity}
-  value={quantities[item.hardwareOldNumber] || 1}
-  onChange={(e) => handleQuantityChange(item.hardwareOldNumber, e.target.value)}
-  onFocus={(e) => e.target.select()}
-  className="w-20 p-1 border rounded focus:ring-blue-500 focus:border-blue-500"
-/>
+                        type="number"
+                        min="1"
+                        max={item.quantity}
+                        value={quantities[item.hardwareOldNumber] || 1}
+                        onChange={(e) => handleQuantityChange(item.hardwareOldNumber, e.target.value)}
+                        onFocus={(e) => e.target.select()}
+                        className="w-20 p-1 border rounded focus:ring-blue-500 focus:border-blue-500"
+                      />
                     </td>
                   </tr>
                 ))}
@@ -367,17 +379,5 @@ const OrderForm = () => {
           >
             {loading ? (
               <>
-                <Loader className="animate-spin h-5 w-5 mr-2" />
-                Processing...
-              </>
-            ) : (
-              'Submit Order'
-            )}
-          </button>
-        </div>
-      </form>
-    </div>
-  );
-};
-
+                <Loader className="animate-spin h-5 w-5
 export default OrderForm;
