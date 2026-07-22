@@ -18,10 +18,21 @@ exports.verifyToken = (req, res, next) => {
 };
 
 exports.verifyAdmin = (req, res, next) => {
-  if (req.user?.role === "admin" || req.user?.role === "superadmin") {
+  if (
+    req.user?.role === "admin" ||
+    req.user?.role === "superadmin" ||
+    req.user?.role === "viewer"
+  ) {
     return next();
   }
   return res.status(403).json({ error: "Access denied" });
+};
+
+exports.verifyViewer = (req, res, next) => {
+  if (req.user?.role === "viewer") {
+    return res.status(403).json({ error: "Read-only account" });
+  }
+  next();
 };
 
 exports.verifySuperAdmin = (req, res, next) => {

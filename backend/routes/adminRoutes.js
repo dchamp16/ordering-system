@@ -2,7 +2,8 @@ const express = require("express");
 const router = express.Router();
 const {
   verifyToken,
-  verifyAdmin
+  verifyViewer,
+  verifyAdmin,
 } = require("../middleware/authMiddleware");
 const {
   getEmpOrders,
@@ -16,8 +17,8 @@ router.use(verifyToken, verifyAdmin);
 
 router.get("/orders/:empId", getEmpOrders);
 router.get("/orders", getAllOrders);
-router.post("/orders", createOrder);
-router.put("/orders/:id", updateOrder);
-router.delete("/orders/:id", deleteOrder);
+router.post("/orders", verifyViewer, createOrder);
+router.put("/orders/:id", verifyViewer, updateOrder);
+router.delete("/orders/:id", verifyViewer, deleteOrder);
 
 module.exports = router;

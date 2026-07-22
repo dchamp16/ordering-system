@@ -4,7 +4,8 @@ const multer = require("multer");
 const {
   verifyToken,
   verifyAdmin,
-  verifySuperAdmin
+  verifyViewer,
+  verifySuperAdmin,
 } = require("../middleware/authMiddleware");
 const {
   addHardware,
@@ -25,7 +26,7 @@ router.post(
   verifyToken,
   verifySuperAdmin,
   upload.single("file"),
-  uploadHardware
+  uploadHardware,
 );
 
 module.exports = router;

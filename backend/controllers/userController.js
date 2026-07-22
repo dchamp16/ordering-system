@@ -1,5 +1,4 @@
 const User = require("../models/userModel");
-const bcrypt = require("bcryptjs");
 const AuditLog = require("../models/auditLogModel");
 
 exports.addUser = async (req, res) => {
@@ -59,7 +58,7 @@ exports.updateUser = async (req, res) => {
     }
     user.username = username || user.username;
     if (password) {
-      user.password = await bcrypt.hash(password, 10);
+      user.password = password || user.password;
     }
     await user.save();
     res.json({ message: "User updated successfully", user });

@@ -1,27 +1,27 @@
-import { useState, useEffect } from 'react';
-import { Loader, UserPlus, Trash2, Edit2 } from 'lucide-react';
-import { toast, Toaster } from 'react-hot-toast';
-import Modal from '../../components/Modal';
-import axiosInstance from '../../utils/axiosInstance';
+import { useState, useEffect } from "react";
+import { Loader, UserPlus, Trash2, Edit2 } from "lucide-react";
+import { toast, Toaster } from "react-hot-toast";
+import Modal from "../../components/Modal";
+import axiosInstance from "../../utils/axiosInstance";
 
-const AdminManagement = () => {
+const AdminManagement = ({ readOnly = false }) => {
   const [admins, setAdmins] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedAdmin, setSelectedAdmin] = useState(null);
   const [formData, setFormData] = useState({
-    username: '',
-    password: '',
-    role: 'admin'
+    username: "",
+    password: "",
+    role: "admin",
   });
 
   const fetchAdmins = async () => {
     try {
-      const response = await axiosInstance.get('/users');
+      const response = await axiosInstance.get("/users");
       setAdmins(response.data);
     } catch (err) {
-      toast.error('Failed to fetch admins');
+      toast.error("Failed to fetch admins");
     } finally {
       setLoading(false);
     }
@@ -31,47 +31,56 @@ const AdminManagement = () => {
     fetchAdmins();
   }, []);
 
+  const guardReadOnly = (action) => {
+    if (readOnly) {
+      toast.error("You're in viewer mode. This action is not allowed.");
+      return true;
+    }
+    return false;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       if (showEditModal) {
         await axiosInstance.put(`/users/${selectedAdmin._id}`, formData);
-        toast.success('Admin updated successfully');
+        toast.success("Admin updated successfully");
       } else {
-        await axiosInstance.post('/users', formData);
-        toast.success('Admin added successfully');
+        await axiosInstance.post("/users", formData);
+        toast.success("Admin added successfully");
       }
       setShowAddModal(false);
       setShowEditModal(false);
-      setFormData({ username: '', password: '', role: 'admin' });
+      setFormData({ username: "", password: "", role: "admin" });
       fetchAdmins();
     } catch (err) {
-      toast.error(err.response?.data?.error || 'Operation failed');
+      toast.error(err.response?.data?.error || "Operation failed");
     }
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this admin?')) return;
-    
+    if (guardReadOnly()) return;
+    if (!window.confirm("Are you sure you want to delete this admin?")) return;
+
     try {
       await axiosInstance.delete(`/users/${id}`);
-      toast.success('Admin deleted successfully');
+      toast.success("Admin deleted successfully");
       fetchAdmins();
     } catch (err) {
-      toast.error('Failed to delete admin');
+      toast.error("Failed to delete admin");
     }
   };
 
   const handleEdit = (admin) => {
+    if (guardReadOnly()) return;
     setSelectedAdmin(admin);
     setFormData({
       username: admin.username,
-      password: '',
-      role: admin.role
+      password: "",
+      role: admin.role,
     });
     setShowEditModal(true);
   };
-
 
   if (loading) {
     return (
@@ -88,7 +97,8 @@ const AdminManagement = () => {
         <h2 className="text-xl font-semibold">Admin Management</h2>
         <button
           onClick={() => {
-            setFormData({ username: '', password: '', role: 'admin' });
+            if (guardReadOnly("add")) return;
+            setFormData({ username: "", password: "", role: "admin" });
             setShowAddModal(true);
           }}
           className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
@@ -117,12 +127,20 @@ const AdminManagement = () => {
             {admins.map((admin) => (
               <tr key={admin._id}>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm font-medium text-gray-900">{admin.username}</div>
+                  <div className="text-sm font-medium text-gray-900">
+                    {admin.username}
+                  </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                    admin.role === 'superadmin' ? 'bg-purple-100 text-purple-800' : 'bg-green-100 text-green-800'
-                  }`}>
+                  <span
+                    className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                      admin.role === "superadmin"
+                        ? "bg-purple-100 text-purple-800"
+                        : admin.role === "viewer"
+                          ? "bg-gray-100 text-gray-800"
+                          : "bg-green-100 text-green-800"
+                    }`}
+                  >
                     {admin.role}
                   </span>
                 </td>
@@ -154,7 +172,7 @@ const AdminManagement = () => {
             setShowAddModal(false);
             setShowEditModal(false);
           }}
-          title={showEditModal ? 'Edit Admin' : 'Add New Admin'}
+          title={showEditModal ? "Edit Admin" : "Add New Admin"}
           formData={formData}
           setFormData={setFormData}
           handleSubmit={handleSubmit}

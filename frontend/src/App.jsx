@@ -1,13 +1,17 @@
-import { useState } from 'react';
-import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
-import Navbar from './components/Navbar';
-import AdminLogin from './pages/admin/AdminLogin';
-import AdminDashboard from './pages/admin/AdminDashboard';
-import CreateOrder from './pages/user/CreateOrder';
-import CheckOrder from './pages/user/CheckOrder';
-import SuperAdminDashboard from './pages/superadmin/SuperAdminDashboard';
-import './App.css'
-
+import { useState } from "react";
+import {
+  BrowserRouter as Router,
+  Route,
+  Routes,
+  Navigate,
+} from "react-router-dom";
+import Navbar from "./components/Navbar";
+import AdminLogin from "./pages/admin/AdminLogin";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import CreateOrder from "./pages/user/CreateOrder";
+import CheckOrder from "./pages/user/CheckOrder";
+import SuperAdminDashboard from "./pages/superadmin/SuperAdminDashboard";
+import "./App.css";
 
 const App = () => {
   const [user, setUser] = useState(null);
@@ -24,15 +28,23 @@ const App = () => {
           {/* Admin Routes */}
           <Route
             path="/admin"
-            element={user ? <Navigate to="/admin/dashboard" /> : <AdminLogin onLogin={setUser} />}
+            element={
+              user ? (
+                <Navigate to="/admin/dashboard" />
+              ) : (
+                <AdminLogin onLogin={setUser} />
+              )
+            }
           />
           <Route
             path="/admin/dashboard"
             element={
               user ? (
-                user.role === 'superadmin' ? 
-                  <SuperAdminDashboard user={user} onLogout={handleLogout} /> : 
+                user.role === "superadmin" || user.role === "viewer" ? (
+                  <SuperAdminDashboard user={user} onLogout={handleLogout} />
+                ) : (
                   <AdminDashboard user={user} onLogout={handleLogout} />
+                )
               ) : (
                 <Navigate to="/admin" />
               )

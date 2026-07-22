@@ -3,7 +3,8 @@ const router = express.Router();
 const {
   verifyToken,
   verifyAdmin,
-  verifySuperAdmin
+  verifyViewer,
+  verifySuperAdmin,
 } = require("../middleware/authMiddleware");
 const {
   addUser,

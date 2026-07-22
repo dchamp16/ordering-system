@@ -1,35 +1,44 @@
-import { useState } from 'react';
-import { Users, Package, ClipboardList, Upload, LogOut, Menu } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import AdminManagement from './AdminManagement';
-import HardwareManagement from './HardwareManagement';
-import AuditLogs from './AuditLogs';
-import AdminDashboard from '../admin/AdminDashboard';
-import axiosInstance from '../../utils/axiosInstance';
-import { toast } from 'react-hot-toast';
-import ChatSystem from '../../components/ChatSystem';
+import { useState } from "react";
+import {
+  Users,
+  Package,
+  ClipboardList,
+  Upload,
+  LogOut,
+  Menu,
+} from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import AdminManagement from "./AdminManagement";
+import HardwareManagement from "./HardwareManagement";
+import AuditLogs from "./AuditLogs";
+import AdminDashboard from "../admin/AdminDashboard";
+import axiosInstance from "../../utils/axiosInstance";
+import { toast } from "react-hot-toast";
+import ChatSystem from "../../components/ChatSystem";
 
 const SuperAdminDashboard = ({ user }) => {
-  const [activeTab, setActiveTab] = useState('orders');
+  const [activeTab, setActiveTab] = useState("orders");
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const navigate = useNavigate();
 
+  const readOnly = user?.role === "viewer";
+
   const tabs = [
-    { id: 'orders', label: 'Orders Dashboard', icon: ClipboardList },
-    { id: 'admins', label: 'Admin Management', icon: Users },
-    { id: 'hardware', label: 'Hardware Management', icon: Package },
-    { id: 'logs', label: 'Audit Logs', icon: ClipboardList },
+    { id: "orders", label: "Orders Dashboard", icon: ClipboardList },
+    { id: "admins", label: "Admin Management", icon: Users },
+    { id: "hardware", label: "Hardware Management", icon: Package },
+    { id: "logs", label: "Audit Logs", icon: ClipboardList },
   ];
 
   const renderContent = () => {
     switch (activeTab) {
-      case 'orders':
-        return <AdminDashboard user={user} />;
-      case 'admins':
-        return <AdminManagement />;
-      case 'hardware':
-        return <HardwareManagement />;
-      case 'logs':
+      case "orders":
+        return <AdminDashboard user={user} readOnly={readOnly} />;
+      case "admins":
+        return <AdminManagement readOnly={readOnly} />;
+      case "hardware":
+        return <HardwareManagement readOnly={readOnly} />;
+      case "logs":
         return <AuditLogs />;
       default:
         return <AdminDashboard user={user} />;
@@ -40,9 +49,11 @@ const SuperAdminDashboard = ({ user }) => {
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 py-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">SuperAdmin Dashboard</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+            SuperAdmin Dashboard
+          </h1>
         </div>
-        
+
         {/* Mobile Menu Button */}
         <div className="sm:hidden mb-4">
           <button
@@ -50,7 +61,7 @@ const SuperAdminDashboard = ({ user }) => {
             className="flex items-center px-4 py-2 bg-white text-gray-600 rounded-lg shadow"
           >
             <Menu className="h-5 w-5 mr-2" />
-            {tabs.find(tab => tab.id === activeTab)?.label}
+            {tabs.find((tab) => tab.id === activeTab)?.label}
           </button>
         </div>
 
@@ -68,8 +79,8 @@ const SuperAdminDashboard = ({ user }) => {
                   }}
                   className={`flex items-center w-full px-4 py-2 rounded-lg transition-colors mb-2 last:mb-0 ${
                     activeTab === tab.id
-                      ? 'bg-blue-600 text-white'
-                      : 'text-gray-600 hover:bg-gray-50'
+                      ? "bg-blue-600 text-white"
+                      : "text-gray-600 hover:bg-gray-50"
                   }`}
                 >
                   <Icon className="h-5 w-5 mr-2" />
@@ -90,8 +101,8 @@ const SuperAdminDashboard = ({ user }) => {
                 onClick={() => setActiveTab(tab.id)}
                 className={`flex items-center px-4 py-2 rounded-lg transition-colors whitespace-nowrap ${
                   activeTab === tab.id
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-white text-gray-600 hover:bg-gray-50'
+                    ? "bg-blue-600 text-white"
+                    : "bg-white text-gray-600 hover:bg-gray-50"
                 }`}
               >
                 <Icon className="h-5 w-5 mr-2" />
@@ -101,9 +112,7 @@ const SuperAdminDashboard = ({ user }) => {
           })}
         </div>
 
-        <div className="bg-white rounded-lg shadow">
-          {renderContent()}
-        </div>
+        <div className="bg-white rounded-lg shadow">{renderContent()}</div>
       </div>
 
       {/* Chat System */}
