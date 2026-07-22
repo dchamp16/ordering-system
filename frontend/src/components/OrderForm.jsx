@@ -1,33 +1,37 @@
-import { useState, useEffect } from 'react';
-import { Loader, ChevronUp, ChevronDown } from 'lucide-react';
-import { Toaster, toast } from 'react-hot-toast';
-import axiosInstance from '../utils/axiosInstance';
+import { useState, useEffect } from "react";
+import { Loader, ChevronUp, ChevronDown, HelpCircle, X } from "lucide-react";
+import { Toaster, toast } from "react-hot-toast";
+import axiosInstance from "../utils/axiosInstance";
 
 const OrderForm = () => {
   const [formData, setFormData] = useState({
-    empId: '',
-    empName: '',
-    structurePO: '',
-    structureName: '',
-    orders: []
+    empId: "",
+    empName: "",
+    structurePO: "",
+    structureName: "",
+    orders: [],
   });
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-  const [sortConfig, setSortConfig] = useState({ key: 'hardwareOldNumber', direction: 'asc' });
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [sortConfig, setSortConfig] = useState({
+    key: "hardwareOldNumber",
+    direction: "asc",
+  });
   const [selectedItems, setSelectedItems] = useState(new Set());
   const [quantities, setQuantities] = useState({});
   const [hardwareItems, setHardwareItems] = useState([]);
   const [loadingHardware, setLoadingHardware] = useState(true);
-  const [searchQuery, setSearchQuery] = useState(''); // New state for search query
+  const [searchQuery, setSearchQuery] = useState(""); // New state for search query
+  const [showInstructions, setShowInstructions] = useState(false); // New state for instructions modal
 
   const fetchHardwareItems = async () => {
     try {
-      const response = await axiosInstance.get('/hardware');
+      const response = await axiosInstance.get("/hardware");
       setHardwareItems(response.data);
     } catch (err) {
-      setError('Failed to load hardware items');
-      console.error('Error fetching hardware:', err);
+      setError("Failed to load hardware items");
+      console.error("Error fetching hardware:", err);
     } finally {
       setLoadingHardware(false);
     }
@@ -38,8 +42,8 @@ const OrderForm = () => {
       try {
         await fetchHardwareItems();
       } catch (err) {
-        setError('Failed to load hardware items');
-        console.error('Error fetching hardware:', err);
+        setError("Failed to load hardware items");
+        console.error("Error fetching hardware:", err);
       }
     };
 
@@ -48,20 +52,25 @@ const OrderForm = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
   const handleQuantityChange = (hardwareOldNumber, quantity) => {
-    const item = hardwareItems.find(item => item.hardwareOldNumber === hardwareOldNumber);
+    const item = hardwareItems.find(
+      (item) => item.hardwareOldNumber === hardwareOldNumber,
+    );
     const maxQuantity = item?.quantity || 1;
-    const newQuantity = Math.max(1, Math.min(parseInt(quantity) || 1, maxQuantity));
-    
-    setQuantities(prev => ({
+    const newQuantity = Math.max(
+      1,
+      Math.min(parseInt(quantity) || 1, maxQuantity),
+    );
+
+    setQuantities((prev) => ({
       ...prev,
-      [hardwareOldNumber]: newQuantity
+      [hardwareOldNumber]: newQuantity,
     }));
   };
 
@@ -74,97 +83,108 @@ const OrderForm = () => {
       setQuantities(newQuantities);
     } else {
       newSelected.add(item.hardwareOldNumber);
-      setQuantities(prev => ({
+      setQuantities((prev) => ({
         ...prev,
-        [item.hardwareOldNumber]: 1
+        [item.hardwareOldNumber]: 1,
       }));
     }
     setSelectedItems(newSelected);
   };
 
   const handleSort = (key) => {
-    setSortConfig(prevConfig => ({
+    setSortConfig((prevConfig) => ({
       key,
-      direction: prevConfig.key === key && prevConfig.direction === 'asc' ? 'desc' : 'asc'
+      direction:
+        prevConfig.key === key && prevConfig.direction === "asc"
+          ? "desc"
+          : "asc",
     }));
   };
 
-  const filteredHardwareItems = hardwareItems.filter(item =>
-    item.hardwareOldNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (item.hardwareName || item.hardwareDescription || '').toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredHardwareItems = hardwareItems.filter(
+    (item) =>
+      item.hardwareOldNumber
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase()) ||
+      (item.hardwareName || item.hardwareDescription || "")
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase()),
   );
 
   const sortedHardwareItems = [...filteredHardwareItems].sort((a, b) => {
     let aValue = a[sortConfig.key];
     let bValue = b[sortConfig.key];
 
-    if (sortConfig.key === 'hardwareName') {
-      aValue = a.hardwareName || a.hardwareDescription || '';
-      bValue = b.hardwareName || b.hardwareDescription || '';
+    if (sortConfig.key === "hardwareName") {
+      aValue = a.hardwareName || a.hardwareDescription || "";
+      bValue = b.hardwareName || b.hardwareDescription || "";
     }
 
-    if (aValue === null || aValue === undefined) aValue = '';
-    if (bValue === null || bValue === undefined) bValue = '';
+    if (aValue === null || aValue === undefined) aValue = "";
+    if (bValue === null || bValue === undefined) bValue = "";
 
-    const comparison = aValue.toString().localeCompare(bValue.toString(), undefined, { numeric: true });
-    return sortConfig.direction === 'asc' ? comparison : -comparison;
+    const comparison = aValue
+      .toString()
+      .localeCompare(bValue.toString(), undefined, { numeric: true });
+    return sortConfig.direction === "asc" ? comparison : -comparison;
   });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (selectedItems.size === 0) {
-      setError('Please select at least one item');
+      setError("Please select at least one item");
       return;
     }
 
     setLoading(true);
-    setError('');
-    setSuccess('');
+    setError("");
+    setSuccess("");
 
-    const orders = Array.from(selectedItems).map(hardwareOldNumber => ({
+    const orders = Array.from(selectedItems).map((hardwareOldNumber) => ({
       hardwareOldNumber,
-      quantity: quantities[hardwareOldNumber] || 1
+      quantity: quantities[hardwareOldNumber] || 1,
     }));
 
     try {
-      await axiosInstance.post('/orders', {
+      await axiosInstance.post("/orders", {
         ...formData,
-        orders
+        orders,
       });
-      
-      toast.success('Order submitted successfully!', {
+
+      toast.success("Order submitted successfully!", {
         duration: 3000,
-        position: 'top-center',
+        position: "top-center",
         style: {
-          background: '#10B981',
-          color: '#FFFFFF',
-          padding: '16px',
-          borderRadius: '8px',
+          background: "#10B981",
+          color: "#FFFFFF",
+          padding: "16px",
+          borderRadius: "8px",
         },
       });
 
       setFormData({
-        empId: '',
-        empName: '',
-        structurePO: '',
-        structureName: '',
-        orders: []
+        empId: "",
+        empName: "",
+        structurePO: "",
+        structureName: "",
+        orders: [],
       });
       setSelectedItems(new Set());
       setQuantities({});
 
       await fetchHardwareItems();
     } catch (err) {
-      const errorMessage = err.response?.data?.error || 'Failed to create order';
+      const errorMessage =
+        err.response?.data?.error || "Failed to create order";
       setError(errorMessage);
       toast.error(errorMessage, {
         duration: 3000,
-        position: 'top-center',
+        position: "top-center",
         style: {
-          background: '#EF4444',
-          color: '#FFFFFF',
-          padding: '16px',
-          borderRadius: '8px',
+          background: "#EF4444",
+          color: "#FFFFFF",
+          padding: "16px",
+          borderRadius: "8px",
         },
       });
     } finally {
@@ -174,11 +194,15 @@ const OrderForm = () => {
 
   const SortIcon = ({ columnKey }) => {
     if (sortConfig.key !== columnKey) {
-      return <ChevronUp className="h-4 w-4 text-gray-400 opacity-0 group-hover:opacity-100" />;
+      return (
+        <ChevronUp className="h-4 w-4 text-gray-400 opacity-0 group-hover:opacity-100" />
+      );
     }
-    return sortConfig.direction === 'asc' 
-      ? <ChevronUp className="h-4 w-4" />
-      : <ChevronDown className="h-4 w-4" />;
+    return sortConfig.direction === "asc" ? (
+      <ChevronUp className="h-4 w-4" />
+    ) : (
+      <ChevronDown className="h-4 w-4" />
+    );
   };
 
   if (loadingHardware) {
@@ -192,12 +216,20 @@ const OrderForm = () => {
   return (
     <div className="max-w-6xl mx-auto p-6 bg-white rounded-lg shadow-md">
       <Toaster />
-      <h2 className="text-2xl font-bold mb-6">Create New Order</h2>
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-2xl font-bold">Create New Order</h2>
+        <button
+          type="button"
+          onClick={() => setShowInstructions(true)}
+          className="flex items-center px-3 py-2 text-sm text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg"
+        >
+          <HelpCircle className="h-5 w-5 mr-1" />
+          How to use this
+        </button>
+      </div>
 
       {error && (
-        <div className="mb-4 p-3 bg-red-100 text-red-700 rounded">
-          {error}
-        </div>
+        <div className="mb-4 p-3 bg-red-100 text-red-700 rounded">{error}</div>
       )}
 
       {success && (
@@ -282,57 +314,70 @@ const OrderForm = () => {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th
+                    scope="col"
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  >
                     Select
                   </th>
-                  <th 
-                    scope="col" 
+                  <th
+                    scope="col"
                     className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer group"
-                    onClick={() => handleSort('hardwareOldNumber')}
+                    onClick={() => handleSort("hardwareOldNumber")}
                   >
                     <div className="flex items-center">
                       Hardware Name
                       <SortIcon columnKey="hardwareOldNumber" />
                     </div>
                   </th>
-                  <th 
-                    scope="col" 
+                  <th
+                    scope="col"
                     className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer group"
-                    onClick={() => handleSort('hardwareName')}
+                    onClick={() => handleSort("hardwareName")}
                   >
                     <div className="flex items-center">
                       Description
                       <SortIcon columnKey="hardwareName" />
                     </div>
                   </th>
-                  <th 
-                    scope="col" 
+                  <th
+                    scope="col"
                     className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer group"
-                    onClick={() => handleSort('hardwareGroupName')}
+                    onClick={() => handleSort("hardwareGroupName")}
                   >
                     <div className="flex items-center">
                       Group
                       <SortIcon columnKey="hardwareGroupName" />
                     </div>
                   </th>
-                  <th 
-                    scope="col" 
+                  <th
+                    scope="col"
                     className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer group"
-                    onClick={() => handleSort('quantity')}
+                    onClick={() => handleSort("quantity")}
                   >
                     <div className="flex items-center">
                       Available
                       <SortIcon columnKey="quantity" />
                     </div>
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th
+                    scope="col"
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  >
                     Order Qty
                   </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {sortedHardwareItems.map((item, index) => (
-                  <tr key={`${item.hardwareOldNumber}-${index}`} className={selectedItems.has(item.hardwareOldNumber) ? 'bg-blue-50' : ''}>
+                  <tr
+                    key={`${item.hardwareOldNumber}-${index}`}
+                    className={
+                      selectedItems.has(item.hardwareOldNumber)
+                        ? "bg-blue-50"
+                        : ""
+                    }
+                  >
                     <td className="px-6 py-4 whitespace-nowrap">
                       <input
                         type="checkbox"
@@ -359,7 +404,12 @@ const OrderForm = () => {
                         min="1"
                         max={item.quantity}
                         value={quantities[item.hardwareOldNumber] || 1}
-                        onChange={(e) => handleQuantityChange(item.hardwareOldNumber, e.target.value)}
+                        onChange={(e) =>
+                          handleQuantityChange(
+                            item.hardwareOldNumber,
+                            e.target.value,
+                          )
+                        }
                         onFocus={(e) => e.target.select()}
                         className="w-20 p-1 border rounded focus:ring-blue-500 focus:border-blue-500"
                       />
@@ -383,11 +433,45 @@ const OrderForm = () => {
                 Processing...
               </>
             ) : (
-              'Submit Order'
+              "Submit Order"
             )}
           </button>
         </div>
       </form>
+      {showInstructions && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg p-6 max-w-lg w-full">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">How to Use This Page</h3>
+              <button
+                onClick={() => setShowInstructions(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <ol className="list-decimal list-inside space-y-2 text-sm text-gray-700">
+              <li>Enter your Employee ID and Name.</li>
+              <li>Enter the Structure PO and Structure Name for this order.</li>
+              <li>
+                Search or browse the hardware table to find the items you need.
+              </li>
+              <li>Check the box next to each item you want to order.</li>
+              <li>
+                Set the quantity for each selected item (up to what's
+                available).
+              </li>
+              <li>Click "Submit Order" when you're done.</li>
+            </ol>
+            <button
+              onClick={() => setShowInstructions(false)}
+              className="mt-6 w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700"
+            >
+              Got it
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

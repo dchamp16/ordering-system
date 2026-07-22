@@ -260,7 +260,12 @@ const HardwareManagement = ({ readOnly = false }) => {
           </div>
         </div>
         <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
-          <label className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 cursor-pointer">
+          <label
+            onClick={(e) => {
+              if (guardReadOnly()) e.preventDefault();
+            }}
+            className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 cursor-pointer"
+          >
             <Upload className="h-5 w-5 mr-2" />
             Upload Excel
             <input
