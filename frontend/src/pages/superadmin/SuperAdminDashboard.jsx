@@ -6,6 +6,7 @@ import {
   Upload,
   LogOut,
   Menu,
+  HelpCircle,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import AdminManagement from "./AdminManagement";
@@ -15,11 +16,13 @@ import AdminDashboard from "../admin/AdminDashboard";
 import axiosInstance from "../../utils/axiosInstance";
 import { toast } from "react-hot-toast";
 import ChatSystem from "../../components/ChatSystem";
+import HelpModal from "../../components/HelpModal";
 
 const SuperAdminDashboard = ({ user }) => {
   const [activeTab, setActiveTab] = useState("orders");
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const navigate = useNavigate();
+  const [showHelp, setShowHelp] = useState(false);
 
   const readOnly = user?.role === "viewer";
 
@@ -52,6 +55,14 @@ const SuperAdminDashboard = ({ user }) => {
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
             SuperAdmin Dashboard
           </h1>
+          <button
+            type="button"
+            onClick={() => setShowHelp(true)}
+            className="flex items-center px-3 py-2 text-sm text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg"
+          >
+            <HelpCircle className="h-5 w-5 mr-1" />
+            How this works
+          </button>
         </div>
 
         {/* Mobile Menu Button */}
@@ -123,6 +134,36 @@ const SuperAdminDashboard = ({ user }) => {
           userRole="superadmin"
           autoShow={false}
         />
+      )}
+
+      {showHelp && (
+        <HelpModal
+          title="Dashboard Overview"
+          onClose={() => setShowHelp(false)}
+        >
+          <p>Use the tabs above to switch between sections:</p>
+          <ul className="list-disc list-inside space-y-1">
+            <li>
+              <strong>Orders Dashboard</strong> view and update order status.
+            </li>
+            <li>
+              <strong>Admin Management</strong> manage admin, superadmin, and
+              viewer accounts.
+            </li>
+            <li>
+              <strong>Hardware Management</strong> manage inventory.
+            </li>
+            <li>
+              <strong>Audit Logs</strong> see a history of every change.
+            </li>
+          </ul>
+          {readOnly && (
+            <p className="mt-3 p-2 bg-gray-100 rounded text-xs">
+              You're logged in as a read-only viewer you can browse every
+              section, but adding, editing, or deleting is disabled.
+            </p>
+          )}
+        </HelpModal>
       )}
     </div>
   );

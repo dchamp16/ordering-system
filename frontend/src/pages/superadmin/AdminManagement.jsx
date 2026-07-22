@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
-import { Loader, UserPlus, Trash2, Edit2 } from "lucide-react";
+import { Loader, UserPlus, Trash2, Edit2, HelpCircle } from "lucide-react";
 import { toast, Toaster } from "react-hot-toast";
 import Modal from "../../components/Modal";
+import HelpModal from "../../components/HelpModal";
 import axiosInstance from "../../utils/axiosInstance";
 
 const AdminManagement = ({ readOnly = false }) => {
@@ -38,6 +39,7 @@ const AdminManagement = ({ readOnly = false }) => {
     }
     return false;
   };
+  const [showHelp, setShowHelp] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -95,17 +97,27 @@ const AdminManagement = ({ readOnly = false }) => {
       <Toaster />
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-semibold">Admin Management</h2>
-        <button
-          onClick={() => {
-            if (guardReadOnly("add")) return;
-            setFormData({ username: "", password: "", role: "admin" });
-            setShowAddModal(true);
-          }}
-          className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-        >
-          <UserPlus className="h-5 w-5 mr-2" />
-          Add Admin
-        </button>
+        <div className="flex items-center space-x-2">
+          <button
+            type="button"
+            onClick={() => setShowHelp(true)}
+            className="flex items-center px-3 py-2 text-sm text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg"
+          >
+            <HelpCircle className="h-5 w-5 mr-1" />
+            Help
+          </button>
+          <button
+            onClick={() => {
+              if (guardReadOnly("add")) return;
+              setFormData({ username: "", password: "", role: "admin" });
+              setShowAddModal(true);
+            }}
+            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            <UserPlus className="h-5 w-5 mr-2" />
+            Add Admin
+          </button>
+        </div>
       </div>
 
       <div className="overflow-x-auto">
@@ -178,6 +190,29 @@ const AdminManagement = ({ readOnly = false }) => {
           handleSubmit={handleSubmit}
           showEditModal={showEditModal}
         />
+      )}
+
+      {showHelp && (
+        <HelpModal title="Admin Management" onClose={() => setShowHelp(false)}>
+          <p>This page manages who can access the admin panel.</p>
+          <ul className="list-disc list-inside space-y-1">
+            <li>
+              <strong>Admin</strong> can manage orders and hardware.
+            </li>
+            <li>
+              <strong>Super Admin</strong> full access, including managing other
+              accounts.
+            </li>
+            <li>
+              <strong>Viewer</strong> read-only access to every tab, cannot make
+              changes.
+            </li>
+          </ul>
+          <p>
+            Use "Add Admin" to create an account, or the edit/delete icons on
+            each row.
+          </p>
+        </HelpModal>
       )}
     </div>
   );

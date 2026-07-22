@@ -1,8 +1,16 @@
 import { useState, useEffect } from "react";
-import { Package, Loader, RotateCcw, ChevronDown, Filter } from "lucide-react";
+import {
+  Package,
+  Loader,
+  RotateCcw,
+  ChevronDown,
+  Filter,
+  HelpCircle,
+} from "lucide-react";
 import { toast, Toaster } from "react-hot-toast";
 import axiosInstance from "../../utils/axiosInstance";
 import ChatSystem from "../../components/ChatSystem";
+import HelpModal from "../../components/HelpModal";
 
 const AdminDashboard = ({ user, readOnly = false }) => {
   const [orders, setOrders] = useState([]);
@@ -13,6 +21,7 @@ const AdminDashboard = ({ user, readOnly = false }) => {
   const [filterStatus, setFilterStatus] = useState("all");
   const [showStatusDropdown, setShowStatusDropdown] = useState(null);
   const [showConfirmDialog, setShowConfirmDialog] = useState(null);
+  const [showHelp, setShowHelp] = useState(false);
 
   const fetchOrders = async () => {
     try {
@@ -142,7 +151,17 @@ const AdminDashboard = ({ user, readOnly = false }) => {
       <Toaster />
       <div className="max-w-7xl mx-auto px-4">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold">All Orders</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-bold">All Orders</h1>
+            <button
+              type="button"
+              onClick={() => setShowHelp(true)}
+              className="flex items-center px-3 py-2 text-sm text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg"
+            >
+              <HelpCircle className="h-5 w-5 mr-1" />
+              Help
+            </button>
+          </div>
           <div className="flex items-center space-x-2">
             <Filter className="h-5 w-5 text-gray-500" />
             <select
@@ -317,6 +336,30 @@ const AdminDashboard = ({ user, readOnly = false }) => {
           userRole={user.role}
           autoShow={false}
         />
+      )}
+
+      {showHelp && (
+        <HelpModal title="Orders Dashboard" onClose={() => setShowHelp(false)}>
+          <p>This page lists every order placed by employees.</p>
+          <ul className="list-disc list-inside space-y-1">
+            <li>
+              Use the "All Status" dropdown to filter by Pending or Completed.
+            </li>
+            <li>
+              Click an order's status badge to mark it Pending or Completed.
+            </li>
+            <li>
+              For Pending items, use the return icon to process a partial or
+              full return.
+            </li>
+          </ul>
+          {readOnly && (
+            <p className="mt-3 p-2 bg-gray-100 rounded text-xs">
+              You're in read-only viewer mode status changes and returns are
+              disabled.
+            </p>
+          )}
+        </HelpModal>
       )}
 
       {showConfirmDialog && (

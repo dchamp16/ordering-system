@@ -451,8 +451,14 @@ const OrderForm = () => {
               </button>
             </div>
             <ol className="list-decimal list-inside space-y-2 text-sm text-gray-700">
-              <li>Enter your Employee ID and Name.</li>
-              <li>Enter the Structure PO and Structure Name for this order.</li>
+              <li>
+                Enter your Employee ID and Name. (Made up for demonstration
+                purposes)
+              </li>
+              <li>
+                Enter the Structure PO and Structure Name for this order. (Made
+                up for demonstration purposes)
+              </li>
               <li>
                 Search or browse the hardware table to find the items you need.
               </li>

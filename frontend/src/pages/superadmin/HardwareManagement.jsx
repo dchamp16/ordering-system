@@ -1,7 +1,16 @@
 import { useState, useEffect } from "react";
-import { Loader, Plus, Upload, Trash2, Edit2, Search } from "lucide-react";
+import {
+  Loader,
+  Plus,
+  Upload,
+  Trash2,
+  Edit2,
+  Search,
+  HelpCircle,
+} from "lucide-react";
 import { toast, Toaster } from "react-hot-toast";
 import axiosInstance from "../../utils/axiosInstance";
+import HelpModal from "../../components/HelpModal";
 
 const HardwareManagement = ({ readOnly = false }) => {
   const [hardware, setHardware] = useState([]);
@@ -41,6 +50,8 @@ const HardwareManagement = ({ readOnly = false }) => {
     }
     return false;
   };
+
+  const [showHelp, setShowHelp] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -260,6 +271,14 @@ const HardwareManagement = ({ readOnly = false }) => {
           </div>
         </div>
         <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
+          <button
+            type="button"
+            onClick={() => setShowHelp(true)}
+            className="flex items-center px-4 py-2 text-blue-600 hover:bg-blue-50 rounded-lg"
+          >
+            <HelpCircle className="h-5 w-5 mr-2" />
+            Help
+          </button>
           <label
             onClick={(e) => {
               if (guardReadOnly()) e.preventDefault();
@@ -366,6 +385,23 @@ const HardwareManagement = ({ readOnly = false }) => {
           }}
           title={showEditModal ? "Edit Hardware" : "Add New Hardware"}
         />
+      )}
+
+      {showHelp && (
+        <HelpModal
+          title="Hardware Management"
+          onClose={() => setShowHelp(false)}
+        >
+          <p>This page manages your hardware/inventory catalog.</p>
+          <ul className="list-disc list-inside space-y-1">
+            <li>"Add Hardware" creates a new item.</li>
+            <li>"Upload Excel" bulk-imports items from a spreadsheet.</li>
+            <li>
+              Use the search box or the edit/delete icons to manage existing
+              items.
+            </li>
+          </ul>
+        </HelpModal>
       )}
     </div>
   );
